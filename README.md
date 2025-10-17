@@ -39,7 +39,7 @@ Still a work in progress
  * Transactions are removed because exception handling has implicit rollbacks
  * Try/catch converted to begin/exception, raiserror and throw converted to "raise exception"
  * Since proper type inference is impossible, + for string concatenation and = for booleans are implemented with operator overloading
- * Json functions: json_value, json_query, openjson, "for json path".
+ * Json functions: json_value, json_query, openjson, isjson, "for json path".
    "For json auto" will likely never really work and is instead handled as "for json path" with a warning comment.
  * Semicolons are added automatically
  * @variableNames are currently renamed to _variable_names,
