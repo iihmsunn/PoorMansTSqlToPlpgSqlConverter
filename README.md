@@ -37,7 +37,7 @@ Still a work in progress
    - try_cast -> try_cast (user defined)
  * Stored procedure calls (exec into is currently not implemented but planned)
  * Transactions are removed because exception handling has implicit rollbacks
- * Try/catch converted to begin/exception
+ * Try/catch converted to begin/exception, raiserror and throw converted to "raise exception"
  * Since proper type inference is impossible, + for string concatenation and = for booleans are implemented with operator overloading
  * Json functions: json_value, json_query, openjson, "for json path".
    "For json auto" will likely never really work and is instead handled as "for json path" with a warning comment.
