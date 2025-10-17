@@ -1,7 +1,7 @@
 ﻿
 ## Poor Man's T-SQL to PL/pgSQL converter
 
-This is an attempt to make a MSSQL's T-SQL to PostgreSQL's PL/pgSQL converter based on Poor Man's T-SQL Formatter.
+This is an attempt to make a MSSQL's T-SQL to PostgreSQL's PL/pgSQL converter based on [Poor Man's T-SQL Formatter](https://github.com/TaoK/PoorMansTSqlFormatter).
 
 It's using the unchanged parser and slightly changed formatter, as well as adding an additional step in between that transforms the syntax tree.
 
