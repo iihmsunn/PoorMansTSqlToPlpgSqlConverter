@@ -54,6 +54,13 @@ When something is not supported, it will simply be left as is so you can finish 
 * merge statement haven't been looked at
 * exec into
 * some window functions are probably broken
+* currently it's just a single .NET 9 console app project, eventually it should be split into a library and a cli.
+
+### Usage
+
+dotnet run -i input.sql -o output.sql -D
+
+-D stands for debugging and creates a "debug" directory where tree.txt and tree.psql.txt files are created which contain easily readable syntax trees before and after the trasformation
 
 ### Additional mentions
 
