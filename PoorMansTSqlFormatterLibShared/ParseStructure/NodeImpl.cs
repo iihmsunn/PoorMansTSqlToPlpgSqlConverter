@@ -3,6 +3,9 @@ Poor Man's T-SQL Formatter - a small free Transact-SQL formatting
 library for .Net 2.0 and JS, written in C#. 
 Copyright (C) 2011-2017 Tao Klerks
 
+Additional Contributors:
+ * Oleg Mishunin, 2025
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -21,10 +24,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using PoorMansTSqlFormatterLib.Interfaces;
 
 namespace PoorMansTSqlFormatterLib.ParseStructure
 {
-    internal class NodeImpl : Node
+    internal class NodeImpl : Node, ICloneable
     {
         public NodeImpl()
         {
@@ -34,7 +42,7 @@ namespace PoorMansTSqlFormatterLib.ParseStructure
 
         public string Name { get; set; }
         public string TextValue { get; set; }
-        public Node Parent { get; set; }
+        public Node? Parent { get; set; }
 
         public IDictionary<string, string> Attributes { get; private set; }
         public IEnumerable<Node> Children { get; private set; }
@@ -50,6 +58,13 @@ namespace PoorMansTSqlFormatterLib.ParseStructure
             SetParentOnChild(newChild);
             var childList = Children as IList<Node>;
             childList.Insert(childList.IndexOf(existingChild), newChild);
+        }
+
+        public void InsertChildAfter(Node newChild, Node existingChild)
+        {
+            SetParentOnChild(newChild);
+            var childList = Children as IList<Node>;
+            childList.Insert(childList.IndexOf(existingChild) + 1, newChild);
         }
 
         private void SetParentOnChild(Node child)
@@ -85,5 +100,27 @@ namespace PoorMansTSqlFormatterLib.ParseStructure
             Attributes.Remove(name);
         }
 
-    }
+        /// <summary>
+        /// for debugger inspection
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{Name}{(string.IsNullOrEmpty(TextValue) ? "" : $" ({TextValue})")}";
+        }
+
+        public object Clone()
+        {
+            var clone = (NodeImpl)MemberwiseClone();
+            clone.Attributes = new Dictionary<string, string>(Attributes);
+            clone.Children = Children.Select(e =>
+            {
+                var childClone = (NodeImpl)e.Clone();
+                childClone.Parent = this;
+                return childClone;
+            }).ToList();
+            clone.Parent = null;
+            return clone;
+        }
+   }
 }

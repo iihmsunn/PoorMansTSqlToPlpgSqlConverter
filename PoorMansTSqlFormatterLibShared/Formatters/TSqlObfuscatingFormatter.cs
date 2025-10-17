@@ -307,7 +307,7 @@ namespace PoorMansTSqlFormatterLib.Formatters
                     _currentCaseLength = 0;
                 }
 
-                keywordCharArray[i] = _currentlyUppercase ? keywordCharArray[i].ToUpperInvariant() : keywordCharArray[i].ToLowerInvariant();
+                keywordCharArray[i] = _currentlyUppercase ? char.ToUpperInvariant(keywordCharArray[i]) : char.ToLowerInvariant(keywordCharArray[i]);
                 _currentCaseLength++;
             }
             return new string(keywordCharArray);
