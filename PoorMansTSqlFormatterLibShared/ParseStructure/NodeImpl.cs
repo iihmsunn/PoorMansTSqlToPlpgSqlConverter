@@ -116,9 +116,9 @@ namespace PoorMansTSqlFormatterLib.ParseStructure
             clone.Children = Children.Select(e =>
             {
                 var childClone = (NodeImpl)e.Clone();
-                childClone.Parent = this;
+                childClone.Parent = clone;
                 return childClone;
-            }).ToList();
+            });
             clone.Parent = null;
             return clone;
         }

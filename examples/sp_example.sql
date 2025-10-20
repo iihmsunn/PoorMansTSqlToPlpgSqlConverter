@@ -9,7 +9,13 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	create table #test1 (field1 nvarchar(max), field2 nvarchar(max))
+	insert into #test1 (field1)
+	exec as_trace @str = 'asd'
 
+	insert into #test (a int)
+	exec as_trace @str = 'asd'
+	
 	select (
 		select
 			test = '123',
@@ -20,11 +26,13 @@ as
 			test3 = 13
 		for json auto, without_array_wrapper
 	) as j
-
-	create table #test1 (field1 nvarchar(max), field2 nvarchar(max))
+	
 	create table #test2 (field1 nvarchar(max), field2 nvarchar(max))
 	insert into #test1 (field1, field2) values (1,2)
 	insert into #test2 (field1, field2) values (3,4)
+
+	insert into #test1 (field1)
+	exec as_trace @str = 'asd'
 
 	select
 		old.fieldName as name,
@@ -62,9 +70,7 @@ as
 		set @msg = error_message() + ', ' + cast(error_line() as nvarchar(max))
 		RAISERROR (@Err, 16, 1)
 	end catch
-
-	exec as_trace @str = 'asd'
-
+	
 	select 1 + 1 as test
 
 	select format(getdate(), 'HH:mm dd.MM.yyyy') a, format(1.2, '00.##') b
@@ -84,6 +90,9 @@ as
 	insert into @t2 (a, b) values (1, 2)
 	
 	insert into @t2 (a, b) select 1 a, 2 b
+
+	insert into @t2
+	exec as_trace @str = 'asd'
 
 	select *
 	from @t2 t2;

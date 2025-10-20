@@ -149,7 +149,7 @@ public class SyntaxTreeTransformer {
     }
 
     private Node WrapInExpressionParens(Node container) {
-        var keyword = container.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD);
+        var keyword = container.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD)!;
         var index = container.Children.ToList().IndexOf(keyword);
         var content = container.Children.Skip(index + 1).Where(e => e.Name != SqlStructureConstants.ENAME_SEMICOLON).ToList();
         var parens = container.InsertChildAfter(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", keyword);
@@ -429,7 +429,7 @@ public class SyntaxTreeTransformer {
 
     private void CleanupDeclareStatements(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_DDL_DECLARE_BLOCK)) {
-            var statement = element.Closest(SqlStructureConstants.ENAME_SQL_STATEMENT);
+            var statement = element.Closest(SqlStructureConstants.ENAME_SQL_STATEMENT)!;
 
             if (statement.Parent.Matches(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT)) return;
             
@@ -697,27 +697,34 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void ConvertTempTables(Node element)
+    private Dictionary<string, Node> ConvertTempTables(Node element, Dictionary<string, Node>? tableDefinitions = null)
     {
+        if (tableDefinitions == null) tableDefinitions = new();
+    
         if (element.Name == SqlStructureConstants.ENAME_DDL_OTHER_BLOCK)
         {
             var create = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "create");
             var table = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "table");
 
-            if (create == null || table == null) return;
+            if (create == null || table == null) return tableDefinitions;
             var name = element.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
 
-            if (!name.TextValue.StartsWith("#")) return;
+            if (!name.TextValue.StartsWith("#")) return tableDefinitions;
 
             element.InsertChildAfter(SqlStructureConstants.ENAME_OTHERKEYWORD, "temp", create);
 
-            return;
+            var definition = name.NextNonWsSibling();
+            tableDefinitions[name.TextValue.ToLower()] = definition;
+
+            return tableDefinitions;
         }
 
         foreach (var child in new List<Node>(element.Children))
         {
-            ConvertTempTables(child);
+            ConvertTempTables(child, tableDefinitions);
         }
+
+        return tableDefinitions;
     }
 
     private void ConvertOldDropTableIfExists(Node element)
@@ -811,14 +818,14 @@ public class SyntaxTreeTransformer {
                 clause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "create");
                 clause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "temp");
                 clause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "table");
-                tableName.Parent.RemoveChild(tableName);
+                tableName!.Parent.RemoveChild(tableName);
                 clause.AddChild(tableName);
                 clause.AddChild((Node)tableParens.Clone());
 
                 var returnStatement = functionBody.Children.First(s => s.Children.First().ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return") != null);
                 var returnClause = returnStatement.Children.First();
                 var returnKeyword = returnClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return");
-                var varName = returnKeyword.NextNonWsSibling();
+                var varName = returnKeyword!.NextNonWsSibling();
                 if (varName != null) {
                     returnClause.RemoveChild(varName);
                 }
@@ -882,10 +889,10 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "cast"))
         {
             var parens = element.NextSibling();
-            var asKeyword = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+            var asKeyword = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
             var type = asKeyword.NextNonWsSibling();
             var typeParens = parens.ChildByName(SqlStructureConstants.ENAME_DDLDETAIL_PARENS);
-            var value = parens.Children.FirstOrDefault(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
+            var value = parens.Children.First(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
             var valueParens = parens.ChildByName(SqlStructureConstants.ENAME_FUNCTION_PARENS);
             var clause = element.Parent;
             parens.RemoveChild(value);
@@ -920,8 +927,8 @@ public class SyntaxTreeTransformer {
             var parens = element.NextSibling();
             var type = parens.ChildByName(SqlStructureConstants.ENAME_DATATYPE_KEYWORD);
             var typeParens = parens.ChildByName(SqlStructureConstants.ENAME_DDLDETAIL_PARENS);
-            var value = parens.Children.FirstOrDefault(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
-            var _as = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+            var value = parens.Children.First(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
+            var _as = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
             parens.RemoveChild(_as);
             parens.InsertChildAfter(SqlStructureConstants.ENAME_COMMA, ",", value);
             parens.InsertChildBefore(SqlStructureConstants.ENAME_OTHERKEYWORD, "null", type);
@@ -951,10 +958,10 @@ public class SyntaxTreeTransformer {
             var matchingSelectionTarget = selectionTargets.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE, target.TextValue) != null);
             if (matchingSelectionTarget == null) return;
 
-            var selectionTarget = matchingSelectionTarget.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE, target.TextValue);
+            var selectionTarget = matchingSelectionTarget.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE, target.TextValue)!;
             var isAlias = matchingSelectionTarget.Children.ToList().IndexOf(selectionTarget) > 0;
 
-            var selectionTargetTable = !isAlias ? selectionTarget : matchingSelectionTarget.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
+            var selectionTargetTable = !isAlias ? selectionTarget : matchingSelectionTarget.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
             var selectionTargetAlias = selectionTargetTable.NextNonWsSibling();
 
             if (isAlias) {
@@ -1124,7 +1131,7 @@ public class SyntaxTreeTransformer {
                     parens.AddChild(node);
                 }
             } else {
-                foreach (var node in BuildJsonObject(item.Value as Dictionary<string, object>)) {
+                foreach (var node in BuildJsonObject(item.Value as Dictionary<string, object> ?? new())) {
                     parens.AddChild(node);
                 }
             }
@@ -1152,7 +1159,7 @@ public class SyntaxTreeTransformer {
                 return;
             }
 
-            var isJsonAuto = path.Matches(SqlStructureConstants.ENAME_OTHERNODE, "auto");
+            var isJsonAuto = path!.Matches(SqlStructureConstants.ENAME_OTHERNODE, "auto");
 
             var comma = path?.NextNonWsSibling();
             var withoutArrayWrapperNode = comma?.NextNonWsSibling();
@@ -1198,7 +1205,7 @@ public class SyntaxTreeTransformer {
             var columns = GetSelectColumns(selectClause);
             var compositeNameColumns = columns.FindAll(e => e.FirstOrDefault(e1 => e1.Name == SqlStructureConstants.ENAME_BRACKET_QUOTED_NAME && e1.TextValue.Contains('.')) != null);
 
-            var nestedJsonColumns = new Dictionary<string, object>();
+            Dictionary<string, object> nestedJsonColumns = new();
 
             foreach (var column in compositeNameColumns)
             {
@@ -1229,11 +1236,11 @@ public class SyntaxTreeTransformer {
                 {
                     if (namePart == varName)
                     {
-                        currentObject[namePart] = value;
+                        currentObject![namePart] = value;
                     }
                     else
                     {
-                        if (!currentObject.ContainsKey(namePart))
+                        if (!currentObject!.ContainsKey(namePart))
                         {
                             currentObject[namePart] = new Dictionary<string, object>();
                         }
@@ -1248,7 +1255,7 @@ public class SyntaxTreeTransformer {
             
             var lastColumn = nestedJsonColumns.LastOrDefault();
             foreach (var column in nestedJsonColumns) {
-                var nodes = BuildJsonObject(column.Value as Dictionary<string, object>);
+                var nodes = BuildJsonObject(column.Value as Dictionary<string, object> ?? new());
                 foreach (var node in nodes) {
                     selectClause.AddChild(node);
                 }
@@ -1331,7 +1338,7 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private List<string> ConvertTableVariables(Node element, List<string> arrayVariables = null) {
+    private List<string> ConvertTableVariables(Node element, List<string>? arrayVariables = null) {
         if (arrayVariables == null) arrayVariables = [];
     
         //for input parameters - convert to array
@@ -1345,11 +1352,11 @@ public class SyntaxTreeTransformer {
                 if (schema == null) continue;
 
                 element.RemoveChild(schema);
-                element.RemoveChild(period);
+                element.RemoveChild(period!);
                 element.RemoveChild(kw);
-                element.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "[]", typeName);
+                element.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "[]", typeName!);
 
-                arrayVariables.Add(typeName.TextValue);
+                arrayVariables.Add(typeName!.TextValue);
             }
         }
 
@@ -1358,7 +1365,7 @@ public class SyntaxTreeTransformer {
             if (!element.Parent.Matches(SqlStructureConstants.ENAME_DDL_DECLARE_BLOCK)) return [];
             var clause = element.Parent;
             clause.Name = SqlStructureConstants.ENAME_DDL_OTHER_BLOCK;
-            var declare = clause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "declare");
+            var declare = clause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "declare")!;
             declare.TextValue = "create";
             clause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERKEYWORD, "temp", declare);
             var tableName = element.PreviousNonWsSibling();
@@ -1377,11 +1384,11 @@ public class SyntaxTreeTransformer {
         return arrayVariables;
     }
 
-    private void UnnestArrays(Node element, List<string> arrayVariables) {
+    private void UnnestArrays(Node element, List<string>? arrayVariables) {
         if (element.Matches(SqlStructureConstants.ENAME_SELECTIONTARGET)) {
-            var tableName = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
+            var tableName = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
             var tableAlias = tableName.NextNonWsSibling();
-            if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
+            if (!(arrayVariables?.Any(e => e.ToLower() == tableName.TextValue.ToLower()) ?? false)) {
                 return;
             }
 
@@ -1396,7 +1403,8 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void InsertIntoArrays(Node element, List<string> arrayVariables) {
+    private void InsertIntoArrays(Node element, List<string>? arrayVariables) {
+        if (arrayVariables == null) arrayVariables = [];
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert")) {
             var insertClause = element.Parent.Parent;
             var tableName = insertClause.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
@@ -1501,12 +1509,12 @@ public class SyntaxTreeTransformer {
             element.TextValue = "extract";
             var parens = element.NextNonWsSibling();
             var datePart = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
-            var comma = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA);
+            var comma = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
 
             comma.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
             comma.TextValue = "from";
 
-            var comma2 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA);
+            var comma2 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
             comma2.Name = SqlStructureConstants.ENAME_OTHEROPERATOR;
             comma2.TextValue = "-";
 
@@ -1558,8 +1566,8 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "dateadd")) {
             var clause = element.Parent;
             var parens = element.NextNonWsSibling();
-            var part = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
-            var comma1 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA);
+            var part = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
+            var comma1 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
             var mod = comma1.NextNonWsSibling();
             var comma2 = mod.NextNonWsSibling();
             var date = comma2.NextNonWsSibling();
@@ -1648,7 +1656,9 @@ public class SyntaxTreeTransformer {
 
     private void ConvertDataTypes(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD)) {
-            if (element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "varchar") || element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "nvarchar")) {
+            if (element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "varchar") 
+                || element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "nvarchar")
+            ) {
                 var parens = element.NextNonWsSibling();
                 if (parens?.Matches(SqlStructureConstants.ENAME_DDLDETAIL_PARENS) ?? false) {
                     parens.Parent.RemoveChild(parens);
@@ -1665,7 +1675,7 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void ConvertProcedureCalls(Node element) {
+    private void ConvertProcedureCalls(Node element, Dictionary<string, Node> tempTableDefinitions, List<(List<Node> variable, List<Node> value)> declarations) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "exec")) {
             element.TextValue = "call";
             var clause = element.Parent;
@@ -1682,10 +1692,96 @@ public class SyntaxTreeTransformer {
                 clause.RemoveChild(node);
                 parens.AddChild(node);
             }
+
+            var execStatement = clause.Parent;
+            var insertClause = execStatement.Children.FirstOrDefault(c => c.ChildByName(SqlStructureConstants.ENAME_COMPOUNDKEYWORD) != null);
+            if (insertClause == null) return;
+
+            var insertStatement = execStatement.Parent.InsertChildAfter(SqlStructureConstants.ENAME_SQL_STATEMENT, "", execStatement);
+            execStatement.RemoveChild(insertClause);
+            insertStatement.AddChild(insertClause);
+
+            var tableName = insertClause.ChildByName(SqlStructureConstants.ENAME_OTHERNODE).TextValue.ToLower();
+            Node? tableDefinition = null;
+
+            var isTableVariable = false;
+            var isTypeVariable = false;
+            var isTempTable = tempTableDefinitions.ContainsKey(tableName);
+            if (isTempTable) {
+                tableDefinition = tempTableDefinitions[tableName];
+            }
+
+            if (!isTempTable) {
+                isTableVariable = declarations.Any(v =>
+                    v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "table"))
+                    && v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERNODE, tableName))
+                );
+            }
+
+            if (isTableVariable)
+            {
+                tableDefinition = declarations.Find(v =>
+                    v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "table"))
+                    && v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERNODE, tableName))
+                ).variable.Find(e => e.Matches(SqlStructureConstants.ENAME_DDL_PARENS));
+            }
+
+            if (!isTempTable && !isTableVariable)
+            {
+                isTypeVariable = declarations.Any(v =>
+                    !v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "table"))
+                    && v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERNODE, tableName))
+                );
+            }
+
+            if (isTypeVariable) {
+                tableDefinition = declarations.Find(v =>
+                    !v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "table"))
+                    && v.variable.Any(n => n.Matches(SqlStructureConstants.ENAME_OTHERNODE, tableName))
+                ).variable.Last(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE));
+            }
+
+            var selectClause = insertStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "select");
+            selectClause.AddChild(SqlStructureConstants.ENAME_ASTERISK, "*");
+            var fromClause = insertStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            fromClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "from");
+            var selectionTarget = fromClause.AddChild(SqlStructureConstants.ENAME_SELECTIONTARGET, "");
+
+            if (tableDefinition == null) {
+                // if tableDefinition is unknown, we're likely inserting into a temp table that was defined somewhere else
+                // so we treat it like a normal temp table but columns list has to be a placeholder with TODO comment
+
+                selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "fetch_all_from");
+                var parens1 = selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+                parens1.AddChild(SqlStructureConstants.ENAME_STRING, $"{name.TextValue}_select1");
+                selectionTarget.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+                var tableDefinitionStub = selectionTarget.AddChild(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "");
+                tableDefinitionStub.AddChild(SqlStructureConstants.ENAME_COMMENT_MULTILINE, "converter warning: (TODO) inserting into a table with unknown columns. Add them here");
+            }
+            else if (tableDefinition.Matches(SqlStructureConstants.ENAME_DDL_PARENS)) {
+                // if inserting into table, fetch from refcursor using fetch_all_from function and table's column list
+                selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "fetch_all_from");
+                var parens1 = selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+                parens1.AddChild(SqlStructureConstants.ENAME_STRING, $"{name.TextValue}_select1");
+                selectionTarget.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+                var tableDefinitionClone = (Node)tableDefinition!.Clone();
+                tableDefinitionClone.Name = SqlStructureConstants.ENAME_EXPRESSION_PARENS;
+                selectionTarget.AddChild(tableDefinitionClone);
+            } else {
+                // if inserting into variable of table type, use refcursor_populate_recordset function and table's type
+                selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "refcursor_populate_recordset");
+                var parens2 = selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+                parens2.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "null");
+                parens2.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+                parens2.AddChild(SqlStructureConstants.ENAME_OTHERNODE, tableDefinition.TextValue);
+                parens2.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
+                parens2.AddChild(SqlStructureConstants.ENAME_STRING, $"{name.TextValue}_select1");
+            }
         }
     
         foreach (var child in new List<Node>(element.Children)) {
-            ConvertProcedureCalls(child);
+            ConvertProcedureCalls(child, tempTableDefinitions, declarations);
         }
     }
 
@@ -1793,7 +1889,7 @@ public class SyntaxTreeTransformer {
                 clause.RemoveChild(element);
                 clause.Attributes["simpleText"] = "begin";
             } else {
-                var closer = element.Closest(SqlStructureConstants.ENAME_CONTAINER_CLOSE);
+                var closer = element.Closest(SqlStructureConstants.ENAME_CONTAINER_CLOSE)!;
                 closer.Parent.RemoveChild(closer);
             }
         }
@@ -1857,7 +1953,7 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_BEGIN_TRANSACTION)
             || element.Matches(SqlStructureConstants.ENAME_COMMIT_TRANSACTION)
             || element.Matches(SqlStructureConstants.ENAME_ROLLBACK_TRANSACTION)) {
-            var statement = element.Closest(SqlStructureConstants.ENAME_SQL_STATEMENT);
+            var statement = element.Closest(SqlStructureConstants.ENAME_SQL_STATEMENT)!;
             statement.Parent.RemoveChild(statement);
         }
 
@@ -1886,7 +1982,6 @@ public class SyntaxTreeTransformer {
 
         arrayVariables?.AddRange(ConvertTableVariables(sqlTreeDoc));
         UnnestArrays(sqlTreeDoc, arrayVariables);
-        InsertIntoArrays(sqlTreeDoc, arrayVariables);
 
         ConvertDeclareToAssign(sqlTreeDoc);
         ConvertSetToAssign(sqlTreeDoc);
@@ -1899,7 +1994,7 @@ public class SyntaxTreeTransformer {
 
         ConvertUnpivot(sqlTreeDoc);
         UpdateSelectStatements(sqlTreeDoc);
-        ConvertTempTables(sqlTreeDoc);
+        var tempTableDefinitions = ConvertTempTables(sqlTreeDoc);
         ConvertLoops(sqlTreeDoc);
         ConvertUpdateFrom(sqlTreeDoc);
 
@@ -1911,7 +2006,8 @@ public class SyntaxTreeTransformer {
         ConvertDateAddFunction(sqlTreeDoc);
         ConvertDateDiffFunction(sqlTreeDoc);
         ConvertIifFunction(sqlTreeDoc);
-        ConvertProcedureCalls(sqlTreeDoc);
+        ConvertProcedureCalls(sqlTreeDoc, tempTableDefinitions, declarations);
+        InsertIntoArrays(sqlTreeDoc, arrayVariables);
         ConvertTransactions(sqlTreeDoc);
         ConvertTryCatch(sqlTreeDoc);
         ConvertOutputParameters(sqlTreeDoc);
