@@ -1820,7 +1820,7 @@ public class SyntaxTreeTransformer {
             if (procedureBlock == null) {
                 return;
             }
-            
+                        
             var selectClause = element.Parent;
             var statement = selectClause.Parent;
 
@@ -1850,6 +1850,8 @@ public class SyntaxTreeTransformer {
                 return;
             }
 
+            var procedureName = procedureBlock.Parent.ChildByName(SqlStructureConstants.ENAME_DDL_PARENS).PreviousNonWsSibling().TextValue;
+
             selectNumber = selectNumber + 1;
             var refcursorName = $"_select{selectNumber}";
             var openRefcursorClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", selectClause);
@@ -1858,21 +1860,14 @@ public class SyntaxTreeTransformer {
             openRefcursorClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "for");
 
             //add an mssql style declare statement for refcursor. It will later be moved into plpgsql declare block along with other declarations
-            var procedureBody =
-                procedureBlock
-                .ChildByName(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT)
-                .ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT)
-                .ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE)
-                .ChildByName(SqlStructureConstants.ENAME_BEGIN_END_BLOCK)
-                .ChildByName(SqlStructureConstants.ENAME_CONTAINER_MULTISTATEMENT);
-            var declareStatement = procedureBody.AddChild(SqlStructureConstants.ENAME_SQL_STATEMENT, "");
+            var declareStatement = statement.Parent.InsertChildBefore(SqlStructureConstants.ENAME_SQL_STATEMENT, "", statement);
             var declareClause = declareStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
             var declareBlock = declareClause.AddChild(SqlStructureConstants.ENAME_DDL_DECLARE_BLOCK, "");
             declareBlock.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "declare");
             declareBlock.AddChild(SqlStructureConstants.ENAME_OTHERNODE, refcursorName);
             declareBlock.AddChild(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "refcursor");
             declareBlock.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, "");
-            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, refcursorName);
+            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, $"{procedureName}_refcursorName");
         }
     
         foreach (var child in new List<Node>(element.Children))
