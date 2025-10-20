@@ -15,6 +15,10 @@ as
 	insert into #test1 (field1)
 	exec as_trace @str = 'asd'
 
+	select stuff((select ',' + field1 from #test for xml path ('')), 1, 1, '') as test1
+
+	select (select field1 + ' ' from #test for xml path ('')) as test2
+	
 	select string_agg(field1, ',') within group (order by field1) as test
 	from #test1
 

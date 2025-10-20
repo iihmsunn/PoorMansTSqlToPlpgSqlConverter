@@ -1529,7 +1529,69 @@ public class SyntaxTreeTransformer {
     }
 
     private void ConvertForXmlPathStringAgg(Node element) {
-        
+        if (element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "xml")) {
+            var path = element.NextNonWsSibling();
+            if (!(path?.Matches(SqlStructureConstants.ENAME_OTHERNODE, "path") ?? false)) {
+                return;
+            }
+
+            var forXmlPathParens = path.NextNonWsSibling();
+            if (!(forXmlPathParens?.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS) ?? false)) {
+                return;
+            }
+
+            var str = forXmlPathParens.ChildByNameAndText(SqlStructureConstants.ENAME_STRING, "");
+            if (str == null) {
+                return;
+            }
+
+            var clause = element.Parent;
+            var expression = clause.Parent;
+            var stuffParens = expression.Parent;
+            var stuffFunction = stuffParens.PreviousNonWsSibling();
+            var usingStuff = false;
+            if (stuffParens.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)
+                && (stuffFunction?.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "stuff") ?? false)) {
+                usingStuff = true;
+            }
+
+            // if stuff() function is used, attempt to use string_agg() with real separator and remove stuff()
+            // otherwise use string_agg with '' as separator
+
+            var selectClause = expression.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            expression.RemoveChild(clause);
+            var separator = "";
+            if (usingStuff) {
+                var separatorNode = selectClause.ChildByName(SqlStructureConstants.ENAME_STRING);
+                var plusSign = separatorNode.NextNonWsSibling();
+
+                if (separatorNode != null && plusSign.Matches(SqlStructureConstants.ENAME_OTHEROPERATOR, "+")) {
+                    separator = separatorNode.TextValue;
+                    selectClause.RemoveChild(separatorNode);
+                    selectClause.RemoveChild(plusSign);
+                }
+            }
+
+            var selectKeyword = selectClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select");
+            var selectNodes = selectClause.Children.Where(e => e != selectKeyword).ToList();
+
+            selectClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "string_agg");
+            var stringAggParens = selectClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+            foreach (var node in selectNodes) {
+                selectClause.RemoveChild(node);
+                stringAggParens.AddChild(node);
+            }
+
+            stringAggParens.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
+            stringAggParens.AddChild(SqlStructureConstants.ENAME_STRING, separator);
+
+            if (usingStuff) {
+                stuffParens.RemoveChild(expression);
+                stuffParens.Parent.InsertChildAfter(expression, stuffParens);
+                stuffFunction!.Parent.RemoveChild(stuffFunction);
+                stuffParens.Parent.RemoveChild(stuffParens);
+            }
+        }
     
         foreach (var child in new List<Node>(element.Children)) {
             ConvertForXmlPathStringAgg(child);
@@ -1930,7 +1992,7 @@ public class SyntaxTreeTransformer {
             declareBlock.AddChild(SqlStructureConstants.ENAME_OTHERNODE, refcursorName);
             declareBlock.AddChild(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "refcursor");
             declareBlock.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, "");
-            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, $"{procedureName}_refcursorName");
+            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, $"{procedureName}_{refcursorName}");
         }
     
         foreach (var child in new List<Node>(element.Children))
@@ -2060,6 +2122,7 @@ public class SyntaxTreeTransformer {
 
         ConvertDirectlyMappedFunctions(sqlTreeDoc);
         ConvertStringAggFunction(sqlTreeDoc);
+        ConvertForXmlPathStringAgg(sqlTreeDoc);
         ConvertFormatFunction(sqlTreeDoc);
         ConvertDatePartFunction(sqlTreeDoc);
         ConvertDateAddFunction(sqlTreeDoc);
