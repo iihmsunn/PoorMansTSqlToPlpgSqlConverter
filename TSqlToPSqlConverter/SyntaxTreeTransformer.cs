@@ -1937,6 +1937,16 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertOutputClause(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "output")) {
+            var clause = element.Parent;
+        }
+        
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertOutputClause(child);
+        }
+    }
+
     private void ConvertProcedureSelectsToRefcursors(Node element, ref int selectNumber)
     {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "select")) {
@@ -2137,6 +2147,7 @@ public class SyntaxTreeTransformer {
         ConvertOutputParameters(sqlTreeDoc);
         ConvertJsonFunctions(sqlTreeDoc);
         ConvertForJsonPath(sqlTreeDoc);
+        ConvertOutputClause(sqlTreeDoc);
         
         AddMissingSemicolons(sqlTreeDoc);
         ConvertCast(sqlTreeDoc);
