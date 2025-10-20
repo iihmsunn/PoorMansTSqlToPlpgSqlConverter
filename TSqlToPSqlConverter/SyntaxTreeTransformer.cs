@@ -1503,6 +1503,31 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertStringAggFunction(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "string_agg")) {
+            var clause = element.Parent;
+            var within = clause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE, "within");
+            if (within == null) return;
+
+            var withinClause = clause.NextNonWsSibling();
+            var withinParens = withinClause.ChildByName(SqlStructureConstants.ENAME_EXPRESSION_PARENS);
+            clause.RemoveChild(within);
+            clause.Parent.RemoveChild(withinClause);
+
+            var stringAggParens = element.NextNonWsSibling();
+            foreach (var _clause in withinParens.Children) {
+                foreach (var node in new List<Node>(_clause.Children)) {
+                    node.Parent.RemoveChild(node);
+                    stringAggParens.AddChild(node);
+                }
+            }
+        }
+    
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertStringAggFunction(child);
+        }
+    }
+
     private void ConvertDateDiffFunction(Node element)
     {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "datediff")) {
@@ -1996,6 +2021,7 @@ public class SyntaxTreeTransformer {
         RemoveUnnecessaryStatements(sqlTreeDoc);
 
         ConvertDirectlyMappedFunctions(sqlTreeDoc);
+        ConvertStringAggFunction(sqlTreeDoc);
         ConvertFormatFunction(sqlTreeDoc);
         ConvertDatePartFunction(sqlTreeDoc);
         ConvertDateAddFunction(sqlTreeDoc);
