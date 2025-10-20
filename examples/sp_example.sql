@@ -9,6 +9,8 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	select stuff(', a, b, c', 1, 1, '') as test
+
 	create table #test1 (field1 nvarchar(max), field2 nvarchar(max))
 	insert into #test1 (field1)
 	exec as_trace @str = 'asd'

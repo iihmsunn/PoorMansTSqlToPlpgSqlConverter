@@ -1528,6 +1528,44 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertForXmlPathStringAgg(Node element) {
+        
+    
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertForXmlPathStringAgg(child);
+        }
+    }
+
+    private void ConvertStuffFunction(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "stuff")) {
+            var parens = element.NextNonWsSibling();
+            var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
+
+            var start = commas[0].NextNonWsSibling();
+            var length = commas[1].NextNonWsSibling();
+            var replacement = commas[2].NextNonWsSibling();
+
+            element.TextValue = "overlay";
+            commas[0].Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
+            commas[0].TextValue = "placing";
+            commas[1].Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
+            commas[1].TextValue = "from";
+            commas[2].Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
+            commas[2].TextValue = "for";
+            parens.RemoveChild(start);
+            parens.RemoveChild(length);
+            parens.RemoveChild(replacement);
+
+            parens.InsertChildAfter(replacement, commas[0]);
+            parens.InsertChildAfter(start, commas[1]);
+            parens.InsertChildAfter(length, commas[2]);
+        }
+    
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertStuffFunction(child);
+        }
+    }
+
     private void ConvertDateDiffFunction(Node element)
     {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "datediff")) {
@@ -2027,6 +2065,7 @@ public class SyntaxTreeTransformer {
         ConvertDateAddFunction(sqlTreeDoc);
         ConvertDateDiffFunction(sqlTreeDoc);
         ConvertIifFunction(sqlTreeDoc);
+        ConvertStuffFunction(sqlTreeDoc);
         ConvertProcedureCalls(sqlTreeDoc, tempTableDefinitions, declarations);
         InsertIntoArrays(sqlTreeDoc, arrayVariables);
         ConvertTransactions(sqlTreeDoc);
