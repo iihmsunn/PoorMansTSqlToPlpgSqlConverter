@@ -29,7 +29,8 @@ public class SyntaxTreeTransformer {
         { "getdate", "now" },
         { "rand", "random" },
         { "newid", "gen_random_uuid" },
-        { "isnull", "coalesce" }
+        { "isnull", "coalesce" },
+        { "scope_identity", "lastval" }
     };
 
     private Dictionary<string, string> DateMapping = new Dictionary<string, string> {
