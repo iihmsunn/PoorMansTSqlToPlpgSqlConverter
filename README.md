@@ -35,6 +35,8 @@ Still a work in progress
    - iif -> case statement
    - cast -> ::
    - try_cast -> try_cast (user defined)
+   - scope_identity -> lastval
+   - string_agg -> converted the usage syntax
  * Stored procedure calls, including "insert into ... exec ..." statements
  * Transactions are removed because exception handling has implicit rollbacks
  * Try/catch converted to begin/exception, raiserror and throw converted to "raise exception"
@@ -46,13 +48,12 @@ Still a work in progress
    #tempTables to _temp_tables, otherNames to other_names.
    This is done to avoid case sensitivity issues. Intended to be used with tools like pgloader that automatically convert table and column names during migration.
  * Data types are converted when possible.
+ * stuff(for xml path ('')) is converted to string_agg
 
 When something is not supported, it will simply be left as is so you can finish the conversion manually.
 
 ### Known Issues / Todo
 
-* merge statement haven't been looked at
-* some window functions are probably broken
 * currently it's just a single .NET 9 console app project, eventually it should be split into a library and a cli
 
 ### Usage
