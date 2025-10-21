@@ -63,7 +63,7 @@ When something is not supported, it will simply be left as is so you can finish 
 * CLR types like geography and geometry are currently not supported.
 * Things that use very specific built-in stored procedures and system tables are not planned to be supported and they're used rarely enough to just port everything manually.
 
-### Usage
+### Command line usage
 
 dotnet run -i input.sql -o output.sql -D
 
