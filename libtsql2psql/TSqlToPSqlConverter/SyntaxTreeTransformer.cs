@@ -613,6 +613,11 @@ public class SyntaxTreeTransformer {
 
     private void AddSelectIntoClause(Node selectClause)
     {
+        var semicolon = selectClause.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+        if (semicolon != null) {
+            selectClause.RemoveChild(semicolon);
+        }
+        
         var columns = GetSelectColumns(selectClause);
         var statement = selectClause.Parent;
 
