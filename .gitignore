@@ -1,5 +1,5 @@
 /**/bin/
 /**/obj/
-/cli/debug
-/cli/output.sql
+/tsql2psql/debug
+/tsql2psql/output.sql
 .nix-profile*
