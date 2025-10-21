@@ -49,7 +49,7 @@ Still a work in progress
    This is done to avoid case sensitivity issues. Intended to be used with tools like pgloader that automatically convert table and column names during migration.
  * Data types are converted when possible.
  * stuff(for xml path ('')) is converted to string_agg
- * Output clause is converted to CTE
+ * Output clause is converted to CTE, as in "with inserted as (insert into table_name ...) insert into _new_ids (id) select id from inserted"
  * Delete statement without from clause is supported
 
 When something is not supported, it will simply be left as is so you can finish the conversion manually.
