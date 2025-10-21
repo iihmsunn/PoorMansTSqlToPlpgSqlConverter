@@ -1939,7 +1939,20 @@ public class SyntaxTreeTransformer {
 
     private void ConvertDelete(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete")) {
-            
+            var deleteClause = element.Parent;
+            var statement = deleteClause.Parent;
+            var fromClause = statement.Children.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "from") != null);
+            if (fromClause != null) {
+                return;
+            }
+
+            var tableName = element.NextNonWsSibling();
+            deleteClause.RemoveChild(tableName);
+
+            fromClause = statement.InsertChildAfter(SqlStructureConstants.ENAME_SQL_CLAUSE, "", deleteClause);
+            fromClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "from");
+            var selectionTarget = fromClause.AddChild(SqlStructureConstants.ENAME_SELECTIONTARGET, "");
+            selectionTarget.AddChild(tableName);
         }
 
         foreach (var child in new List<Node>(element.Children)) {
@@ -2258,6 +2271,7 @@ public class SyntaxTreeTransformer {
 
         ConvertUnpivot(sqlTreeDoc);
         UpdateSelectStatements(sqlTreeDoc);
+        ConvertDelete(sqlTreeDoc);
         var tempTableDefinitions = ConvertTempTables(sqlTreeDoc);
         ConvertLoops(sqlTreeDoc);
         ConvertUpdateFrom(sqlTreeDoc);

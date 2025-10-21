@@ -16,7 +16,7 @@ as
 	where id = 1
 
 	delete from #test
-	where id = 1
+	where id = 1;
 
 	with data as (
         select 'test1' val
