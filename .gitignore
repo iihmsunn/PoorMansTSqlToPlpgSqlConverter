@@ -1,6 +1,5 @@
 /**/bin/
 /**/obj/
-/debug
-/output.sql
+/cli/debug
+/cli/output.sql
 .nix-profile*
-

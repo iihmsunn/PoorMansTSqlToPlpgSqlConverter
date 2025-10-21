@@ -1,0 +1,6 @@
+@tsql2psqlapi_HostAddress = http://localhost:5286
+
+POST {{tsql2psqlapi_HostAddress}}/convert/
+Accept: application/json
+
+###

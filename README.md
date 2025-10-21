@@ -56,7 +56,6 @@ When something is not supported, it will simply be left as is so you can finish 
 
 ### Known Issues / Todo
 
-* currently it's just a single .NET 9 console app project, eventually it should be split into a library and a cli
 * sql server allows to use some keywords as table or column names, but the parser this project uses can be confused by that. For instance, if your CTE is named "temp",
   and you do "select from temp", the converter may fail to identify temp as table name because the parser has marked it as keyword rather than a name.
   There will be some attempt to work around it and the example above is already fixed by simply removing temp from the list of known keywords, but it may not be possible in all cases.
