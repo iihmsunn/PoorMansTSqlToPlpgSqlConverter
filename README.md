@@ -49,6 +49,8 @@ Still a work in progress
    This is done to avoid case sensitivity issues. Intended to be used with tools like pgloader that automatically convert table and column names during migration.
  * Data types are converted when possible.
  * stuff(for xml path ('')) is converted to string_agg
+ * Output clause is converted to CTE
+ * Delete statement without from clause is supported
 
 When something is not supported, it will simply be left as is so you can finish the conversion manually.
 
@@ -59,6 +61,8 @@ When something is not supported, it will simply be left as is so you can finish 
   and you do "select from temp", the converter may fail to identify temp as table name because the parser has marked it as keyword rather than a name.
   There will be some attempt to work around it and the example above is already fixed by simply removing temp from the list of known keywords, but it may not be possible in all cases.
   A workaround is to wrap such names in square brackets in the source code.
+* CLR types like geography and geometry are currently not supported.
+* Things that use very specific built-in stored procedures and system tables are not planned to be supported and they're used rarely enough to just port everything manually.
 
 ### Usage
 
