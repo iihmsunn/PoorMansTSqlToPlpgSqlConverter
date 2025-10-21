@@ -2240,6 +2240,34 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertIdentity(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "identity")) {
+            var clause = element.Parent;
+            var clauseNodes = clause.Children.ToList();
+            var index = clauseNodes.IndexOf(element);
+            var commas = clause.ChildrenByName(SqlStructureConstants.ENAME_COMMA);
+            var commaIndices = commas.Select(e => clauseNodes.IndexOf(e)).ToList();
+            var lastCommaIndexBeforeElement = commaIndices.LastOrDefault(e => e < index, 0);
+            var parens = element.NextNonWsSibling();
+            clause.RemoveChild(element);
+            clause.RemoveChild(parens);
+            
+            var dataType = clauseNodes.Skip(lastCommaIndexBeforeElement).First(e => e.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD));
+            
+            if (dataType.TextValue.ToLower() == "int") {
+                dataType.TextValue = "serial";
+            }
+            else if (dataType.TextValue.ToLower() == "bigint") {
+                dataType.TextValue = "bigserial";
+            }
+        }
+        
+        foreach (var child in new List<Node>(element.Children))
+        {
+            ConvertIdentity(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertProceduralBlocks(sqlTreeDoc);
@@ -2302,6 +2330,7 @@ public class SyntaxTreeTransformer {
         ConvertTryCast(sqlTreeDoc);
         UpdateNames(sqlTreeDoc);
         ConvertDataTypes(sqlTreeDoc);
+        ConvertIdentity(sqlTreeDoc);
         FixCommasAfterComments(sqlTreeDoc);
     }
 }
