@@ -2129,8 +2129,8 @@ namespace PoorMansTSqlFormatterLib.Parsers
             KeywordList.Add("TABLOCKX", KeywordType.OtherKeyword);
             KeywordList.Add("TAN", KeywordType.FunctionKeyword);
             KeywordList.Add("TAPE", KeywordType.OtherKeyword);
-            KeywordList.Add("TEMP", KeywordType.OtherKeyword);
-            KeywordList.Add("TEMPORARY", KeywordType.OtherKeyword);
+            // KeywordList.Add("TEMP", KeywordType.OtherKeyword);
+            // KeywordList.Add("TEMPORARY", KeywordType.OtherKeyword);
             KeywordList.Add("TEXT", KeywordType.DataTypeKeyword);
             KeywordList.Add("TEXTPTR", KeywordType.FunctionKeyword);
             KeywordList.Add("TEXTSIZE", KeywordType.OtherKeyword);
