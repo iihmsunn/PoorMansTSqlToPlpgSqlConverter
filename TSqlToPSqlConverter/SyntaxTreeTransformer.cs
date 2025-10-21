@@ -1951,24 +1951,6 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "output")) {
             var outputClause = element.Parent;
 
-            var mergeAction = outputClause.ChildByNameAndText(SqlStructureConstants.ENAME_PSEUDONAME, "$action");
-            if (mergeAction != null) {
-                mergeAction.Name = SqlStructureConstants.ENAME_FUNCTION_KEYWORD;
-                mergeAction.TextValue = "merge_action";
-                outputClause.InsertChildAfter(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", mergeAction);
-            }
-
-            var outputPeriods = outputClause.ChildrenByName(SqlStructureConstants.ENAME_PERIOD).ToList();
-            foreach (var period in outputPeriods) {
-                var table = period.PreviousNonWsSibling();
-                if (table.TextValue.ToLower() == "inserted" || table.TextValue.ToLower() == "deleted") {
-                    outputClause.RemoveChild(table);
-                    outputClause.RemoveChild(period);
-                }
-            }
-            
-            var outputNodes = outputClause.Children.Where(e => e != element).ToList();
-            
             var statement = outputClause.Parent;
             
             var insertClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "") != null);
@@ -1982,6 +1964,37 @@ public class SyntaxTreeTransformer {
             else if (mergeClause != null) cteName = "merged";
             else if (deleteClause != null) cteName = "deleted";
             else cteName = "inserted";
+            
+            var mergeAction = outputClause.ChildByNameAndText(SqlStructureConstants.ENAME_PSEUDONAME, "$action");
+            if (mergeAction != null) {
+                mergeAction.Name = SqlStructureConstants.ENAME_FUNCTION_KEYWORD;
+                mergeAction.TextValue = "merge_action";
+                outputClause.InsertChildAfter(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", mergeAction);
+            }
+
+            var outputPeriods = outputClause.ChildrenByName(SqlStructureConstants.ENAME_PERIOD).ToList();
+            foreach (var period in outputPeriods) {
+                var table = period.PreviousNonWsSibling();
+
+                if (cteName == "inserted" || cteName == "deleted")
+                {
+                    if (table.TextValue.ToLower() == "inserted" || table.TextValue.ToLower() == "deleted")
+                    {
+                        outputClause.RemoveChild(table);
+                        outputClause.RemoveChild(period);
+                    }
+                }
+                else if (cteName == "updated" || cteName == "merged") {
+                    if (table.TextValue.ToLower() == "inserted") {
+                        table.TextValue = "new";
+                    }
+                    else if (table.TextValue.ToLower() == "deleted") {
+                        table.TextValue = "old";
+                    }
+                }
+            }
+            
+            var outputNodes = outputClause.Children.Where(e => e != element).ToList();
             
             var intoClause = outputClause.NextNonWsSibling();
             var intoKeyword = intoClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "into")!;

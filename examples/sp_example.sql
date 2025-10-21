@@ -12,6 +12,12 @@ as
 	create table #new_ids (new_id bigint)
 	create table #test (id bigint primary key identity(1,1), val nvarchar(max));
 
+	delete #test
+	where id = 1
+
+	delete from #test
+	where id = 1
+
 	with data as (
         select 'test1' val
         union
