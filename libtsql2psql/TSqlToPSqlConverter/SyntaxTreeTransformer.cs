@@ -2268,6 +2268,16 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertNStrings(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_NSTRING)) {
+            element.Name = SqlStructureConstants.ENAME_STRING;
+        }
+
+        foreach (var child in element.Children) {
+            ConvertNStrings(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertProceduralBlocks(sqlTreeDoc);
@@ -2331,6 +2341,7 @@ public class SyntaxTreeTransformer {
         UpdateNames(sqlTreeDoc);
         ConvertDataTypes(sqlTreeDoc);
         ConvertIdentity(sqlTreeDoc);
+        ConvertNStrings(sqlTreeDoc);
         FixCommasAfterComments(sqlTreeDoc);
     }
 }

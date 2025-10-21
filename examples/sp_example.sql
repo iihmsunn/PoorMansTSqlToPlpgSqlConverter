@@ -9,6 +9,8 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	declare @aaa nvarchar(max) = N'test'
+
 	create table #new_ids (new_id bigint)
 	create table #test (id bigint primary key identity(1,1), val nvarchar(max));
 
