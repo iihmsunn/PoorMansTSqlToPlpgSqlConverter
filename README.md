@@ -65,6 +65,8 @@ When something is not supported, it will simply be left as is so you can finish 
 
 ### Command line usage
 
+tsql2psql project is the command line tool which can be used like this:
+
 dotnet run -i input.sql -o output.sql -D
 
 -D stands for debugging and creates a "debug" directory where tree.txt and tree.psql.txt files are created which contain easily readable syntax trees before and after the trasformation
