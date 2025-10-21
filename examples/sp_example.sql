@@ -9,6 +9,22 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	create table #new_ids (new_id bigint)
+	create table #test (id bigint primary key identity(1,1), val nvarchar(max));
+
+	with data as (
+        select 'test1' val
+        union
+        select 'test2' val
+    ),
+	temp as (
+		select * from data
+	)
+    insert into #test (val) 
+    output inserted.id into #new_ids (new_id)
+    select val
+    from temp
+
 	select stuff(', a, b, c', 1, 1, '') as test
 
 	create table #test1 (field1 nvarchar(max), field2 nvarchar(max))

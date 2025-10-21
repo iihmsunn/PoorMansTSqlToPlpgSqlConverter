@@ -1387,7 +1387,7 @@ public class SyntaxTreeTransformer {
 
     private void UnnestArrays(Node element, List<string>? arrayVariables) {
         if (element.Matches(SqlStructureConstants.ENAME_SELECTIONTARGET)) {
-            var tableName = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
+            var tableName = element.Children.First(e => e.Name == SqlStructureConstants.ENAME_WHITESPACE);
             var tableAlias = tableName.NextNonWsSibling();
             if (!(arrayVariables?.Any(e => e.ToLower() == tableName.TextValue.ToLower()) ?? false)) {
                 return;
@@ -1937,9 +1937,114 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertDelete(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete")) {
+            
+        }
+
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertDelete(child);
+        }
+    }
+
     private void ConvertOutputClause(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "output")) {
-            var clause = element.Parent;
+            var outputClause = element.Parent;
+
+            var mergeAction = outputClause.ChildByNameAndText(SqlStructureConstants.ENAME_PSEUDONAME, "$action");
+            if (mergeAction != null) {
+                mergeAction.Name = SqlStructureConstants.ENAME_FUNCTION_KEYWORD;
+                mergeAction.TextValue = "merge_action";
+                outputClause.InsertChildAfter(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", mergeAction);
+            }
+
+            var outputPeriods = outputClause.ChildrenByName(SqlStructureConstants.ENAME_PERIOD).ToList();
+            foreach (var period in outputPeriods) {
+                var table = period.PreviousNonWsSibling();
+                if (table.TextValue.ToLower() == "inserted" || table.TextValue.ToLower() == "deleted") {
+                    outputClause.RemoveChild(table);
+                    outputClause.RemoveChild(period);
+                }
+            }
+            
+            var outputNodes = outputClause.Children.Where(e => e != element).ToList();
+            
+            var statement = outputClause.Parent;
+            
+            var insertClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "") != null);
+            var updateClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "update") != null);
+            var mergeClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "merge") != null);
+            var deleteClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete") != null);
+            var mainClause = insertClause ?? updateClause ?? mergeClause ?? deleteClause;
+            
+            string cteName;
+            if (updateClause != null) cteName = "updated";
+            else if (mergeClause != null) cteName = "merged";
+            else if (deleteClause != null) cteName = "deleted";
+            else cteName = "inserted";
+            
+            var intoClause = outputClause.NextNonWsSibling();
+            var intoKeyword = intoClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "into")!;
+            var outputTableName = intoKeyword.NextNonWsSibling();
+            var outputTableColumns = outputTableName.NextNonWsSibling();
+
+            statement.RemoveChild(outputClause);
+            statement.RemoveChild(intoClause);
+            
+            var cteClause = statement.Children.FirstOrDefault(c => c.ChildByName(SqlStructureConstants.ENAME_CTE_WITH_CLAUSE) != null);
+            
+            if (cteClause == null) {
+                cteClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_CTE_WITH_CLAUSE, "", mainClause!);
+                var cteClauseOpener = cteClause.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
+                cteClauseOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "with");
+            } else {
+                cteClause = cteClause.ChildByName(SqlStructureConstants.ENAME_CTE_WITH_CLAUSE);
+                var cteCommaContainer = cteClause.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
+                cteCommaContainer.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
+            }
+
+            var cteAlias = cteClause.AddChild(SqlStructureConstants.ENAME_CTE_ALIAS, "");
+            cteAlias.AddChild(SqlStructureConstants.ENAME_OTHERNODE, cteName);
+            var cteAsBlock = cteClause.AddChild(SqlStructureConstants.ENAME_CTE_AS_BLOCK, "");
+            var cteAsBlockOpener = cteAsBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
+            cteAsBlockOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+            var cteBody = cteAsBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
+            var cteParens = cteBody.AddChild(SqlStructureConstants.ENAME_SELECTIONTARGET_PARENS, "");
+            var mainClauseIndex = statement.Children.ToList().IndexOf(mainClause!);
+            var clausesToMove = statement.Children.Skip(mainClauseIndex).ToList();
+            foreach (var clause in clausesToMove) {
+                clause.Parent.RemoveChild(clause);
+                cteParens.AddChild(clause);
+            }
+            var returningClause = cteParens.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            returningClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "returning");
+            foreach (var node in outputNodes) {
+                node.Parent.RemoveChild(node);
+                returningClause.AddChild(node);
+            }
+
+            var finalInsertClause = statement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            var compoundKeyword = finalInsertClause.AddChild(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "");
+            compoundKeyword.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert");
+            compoundKeyword.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+            compoundKeyword.Attributes["simpleText"] = "insert into";
+            outputTableName.Parent.RemoveChild(outputTableName);
+            finalInsertClause.AddChild(outputTableName);
+            if (outputTableColumns != null) {
+                outputTableColumns.Parent.RemoveChild(outputTableColumns);
+                finalInsertClause.AddChild(outputTableColumns);
+            }
+
+            var finalSelectClause = statement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            finalSelectClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "select");
+            foreach (var node in outputNodes) {
+                finalSelectClause.AddChild((Node)node.Clone());
+            }
+
+            var finalFromClause = statement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            finalFromClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "from");
+            var finalSelectionTarget = finalFromClause.AddChild(SqlStructureConstants.ENAME_SELECTIONTARGET, "");
+            finalSelectionTarget.AddChild(SqlStructureConstants.ENAME_OTHERNODE, cteName);
         }
         
         foreach (var child in new List<Node>(element.Children)) {
@@ -2094,6 +2199,21 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void FixDdlOtherBlockSemicolon(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_DDL_OTHER_BLOCK)) {
+            var semicolon = element.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+            if (semicolon == null) return;
+
+            element.RemoveChild(semicolon);
+            element.Parent.AddChild(semicolon);
+        }
+        
+        foreach (var child in new List<Node>(element.Children))
+        {
+            FixDdlOtherBlockSemicolon(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertProceduralBlocks(sqlTreeDoc);
@@ -2148,7 +2268,8 @@ public class SyntaxTreeTransformer {
         ConvertJsonFunctions(sqlTreeDoc);
         ConvertForJsonPath(sqlTreeDoc);
         ConvertOutputClause(sqlTreeDoc);
-        
+
+        FixDdlOtherBlockSemicolon(sqlTreeDoc);
         AddMissingSemicolons(sqlTreeDoc);
         ConvertCast(sqlTreeDoc);
         ConvertTryCast(sqlTreeDoc);
