@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/tsql2psql.csproj",
+                "${workspaceFolder}/tsql2psql/tsql2psql.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/tsql2psql.csproj",
+                "${workspaceFolder}/tsql2psql/tsql2psql.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/tsql2psql.csproj"
+                "${workspaceFolder}/tsql2psql/tsql2psql.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
