@@ -21,6 +21,13 @@ using PoorMansTSqlFormatterLib.ParseStructure;
 
 namespace TSqlToPSql;
 
+public enum SelectColumnType {
+    NameOnly,
+    NameAndTableOnly,
+    Aliased,
+    Computed
+}
+
 public class SyntaxTreeTransformer {
     private int WarningCount = 0;
 
@@ -199,6 +206,10 @@ public class SyntaxTreeTransformer {
 
     private List<Node> TrimNodeList(List<Node>? list)
     {
+        if (list?.FirstOrDefault()?.Name == SqlStructureConstants.ENAME_WHITESPACE) {
+            list.RemoveAt(0);
+        }
+    
         if (list?.LastOrDefault()?.Name == SqlStructureConstants.ENAME_WHITESPACE)
         {
             list.RemoveAt(list.Count - 1);
@@ -1280,11 +1291,12 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private (Node name, List<Node> value) ParseSelectColumn(List<Node> nodes) {
+    private (Node name, List<Node> value, SelectColumnType type) ParseSelectColumn(List<Node> nodes) {
         var asKeyword = nodes.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "as"));
         var name = nodes.Last(e => e.IsName());
         List<Node>? value = null;
         var nonWsNodes = nodes.FindAll(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
+        SelectColumnType? type = null;
         
         if (asKeyword != null) {
             value = nodes.Take(nodes.IndexOf(asKeyword)).ToList();
@@ -1292,14 +1304,34 @@ public class SyntaxTreeTransformer {
             var hasPeriod = name.PreviousNonWsSibling()?.Matches(SqlStructureConstants.ENAME_PERIOD) ?? false;
             var isOneNode = nonWsNodes.Count == 1;
 
+            
             if (hasPeriod || isOneNode) {
                 value = nodes;
-            } else {
+
+                if (hasPeriod)
+                {
+                    type = SelectColumnType.NameAndTableOnly;
+                }
+                else if (isOneNode)
+                {
+                    type = SelectColumnType.NameOnly;
+                }
+            }
+            else {
                 value = nodes.FindAll(e => e != name);
             }
         }
 
-        return (name, value);
+        if (type == null) {
+            var trimmed = TrimNodeList(value);
+            if (value.Any(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE && e.Name != SqlStructureConstants.ENAME_OTHERNODE && e.Name != SqlStructureConstants.ENAME_PERIOD)) {
+                type = SelectColumnType.Computed;
+            } else {
+                type = SelectColumnType.Aliased;
+            }
+        }
+        
+        return (name, value, type.Value);
     }
 
     private void ConvertPivot(Node element) {
