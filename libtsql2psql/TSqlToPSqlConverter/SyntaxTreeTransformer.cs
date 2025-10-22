@@ -1287,6 +1287,8 @@ public class SyntaxTreeTransformer {
             var tableName = selectionTarget.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
             var unpivotParens = element.NextNonWsSibling();
             var fieldListParens = unpivotParens.ChildByName(SqlStructureConstants.ENAME_IN_PARENS);
+            var valueColumnName = unpivotParens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
+            var nameColumnName = valueColumnName.NextNonWsSibling().NextNonWsSibling();
             var tableAlias = unpivotParens.NextNonWsSibling();
             var joinOn = tableAlias.NextNonWsSibling();
 
@@ -1314,7 +1316,7 @@ public class SyntaxTreeTransformer {
             }
             unnestParens.AddChild(SqlStructureConstants.ENAME_PERIOD, "]");
             selectClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
-            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "field_name");
+            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, nameColumnName.TextValue);
 
             selectClause.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
 
@@ -1329,7 +1331,7 @@ public class SyntaxTreeTransformer {
             }
             unnestParens.AddChild(SqlStructureConstants.ENAME_PERIOD, "]");
             selectClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
-            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "field_value");
+            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, valueColumnName.TextValue);
             
             var fromClause = selectionTargetParens.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
             fromClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "from");

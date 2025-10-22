@@ -19,7 +19,7 @@ Still a work in progress
  * Table variables. When defined as table, they are converted to temp tables, when using table types - to arrays
  * If statements
  * While loops
- * Unpivot function is implemented but likely requires a bit of manual intervention because there are some hardcoded column names in output
+ * Unpivot function
  * Select statements. Top keyword is converted to limit, 'name = value' syntax converted to 'value as name'
  * 'update ... from ...' syntax
  * Some unnecessary things like 'set nocount' and 'lineno' are removed
