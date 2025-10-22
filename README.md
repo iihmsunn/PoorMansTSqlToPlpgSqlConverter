@@ -20,6 +20,7 @@ Still a work in progress
  * If statements
  * While loops
  * Unpivot function
+ * Pivot function
  * Select statements. Top keyword is converted to limit, 'name = value' syntax converted to 'value as name'
  * 'update ... from ...' syntax
  * Some unnecessary things like 'set nocount' and 'lineno' are removed
