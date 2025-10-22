@@ -9,6 +9,15 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	create table #temp (name nvarchar(max), value int);
+	insert into #temp (name, value) values ('test1', 1), ('test2', 2), ('test3', 3);
+
+	SELECT test1, test2, test3
+	from #temp t
+	PIVOT (
+	    max(value) FOR name IN (test1, test2, test3)
+	) AS PivotTable;
+
 	declare @aaa nvarchar(max) = N'test'
 
 	create table #new_ids (new_id bigint)

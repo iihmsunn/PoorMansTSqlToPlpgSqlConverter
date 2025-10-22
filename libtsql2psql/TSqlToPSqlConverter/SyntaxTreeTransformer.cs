@@ -1280,6 +1280,70 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private (Node name, List<Node> value) ParseSelectColumn(List<Node> nodes) {
+        var asKeyword = nodes.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "as"));
+        var name = nodes.Last(e => e.IsName());
+        List<Node>? value = null;
+        var nonWsNodes = nodes.FindAll(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
+        
+        if (asKeyword != null) {
+            value = nodes.Take(nodes.IndexOf(asKeyword)).ToList();
+        } else {
+            var hasPeriod = name.PreviousNonWsSibling()?.Matches(SqlStructureConstants.ENAME_PERIOD) ?? false;
+            var isOneNode = nonWsNodes.Count == 1;
+
+            if (hasPeriod || isOneNode) {
+                value = nodes;
+            } else {
+                value = nodes.FindAll(e => e != name);
+            }
+        }
+
+        return (name, value);
+    }
+
+    private void ConvertPivot(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "pivot")) {
+            var pivotParens = element.NextNonWsSibling();
+            var tableAlias = pivotParens.NextNonWsSibling();
+            var pivotColumnList = pivotParens.ChildByName(SqlStructureConstants.ENAME_IN_PARENS);
+            var pivotColumns = pivotColumnList.Children.Where(e => e.IsName()).Select(e => e.TextValue.ToLower());
+            var pivotForKeyword = pivotParens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "for")!;
+            var pivotForIndex = pivotParens.Children.ToList().IndexOf(pivotForKeyword);
+            var pivotValue = pivotParens.Children.Take(pivotForIndex).ToList();
+            var pivotSourceColumn = pivotForKeyword.NextNonWsSibling();
+
+            var pivotClause = element.Parent;
+            var statement = pivotClause.Parent;
+            var fromClause = statement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "from") != null);
+            statement.RemoveChild(pivotClause);
+
+            var selectClause = statement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            var selectColumns = GetSelectColumns(selectClause);
+
+            foreach (var column in selectColumns) {
+                var firstNode = column.First();
+                var parsed = ParseSelectColumn(column);
+                if (pivotColumns.Contains(parsed.name.TextValue.ToLower())) {
+                    foreach (var node in pivotValue) {
+                        selectClause.InsertChildBefore((Node)node.Clone(), firstNode);
+                    }
+                    selectClause.InsertChildBefore(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "filter", firstNode);
+                    var filterParens = selectClause.InsertChildBefore(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", firstNode);
+                    filterParens.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "where");
+                    filterParens.AddChild((Node)pivotSourceColumn.Clone());
+                    filterParens.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, "=");
+                    filterParens.AddChild(SqlStructureConstants.ENAME_STRING, parsed.name.TextValue.ToLower());
+                    selectClause.InsertChildBefore(SqlStructureConstants.ENAME_OTHERKEYWORD, "as", firstNode);
+                }
+            }
+        }
+
+        foreach (var child in new List<Node>(element.Children)) {
+            ConvertPivot(child);
+        }
+    }
+
     private void ConvertUnpivot(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "unpivot")) {
             var unpivotClause = element.Parent;
@@ -2314,8 +2378,9 @@ public class SyntaxTreeTransformer {
         ForceIfBeginEnd(sqlTreeDoc);
         ConvertConditions(sqlTreeDoc);
 
-        ConvertUnpivot(sqlTreeDoc);
         UpdateSelectStatements(sqlTreeDoc);
+        ConvertPivot(sqlTreeDoc);
+        ConvertUnpivot(sqlTreeDoc);
         ConvertDelete(sqlTreeDoc);
         var tempTableDefinitions = ConvertTempTables(sqlTreeDoc);
         ConvertLoops(sqlTreeDoc);
