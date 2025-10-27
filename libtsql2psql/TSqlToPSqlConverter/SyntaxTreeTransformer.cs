@@ -185,6 +185,30 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ForceDdlParens(Node element) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "procedure")) {
+            var clauseNodes = element.Parent.Children.ToList();
+            var schema = element.NextNonWsSibling();
+            var period = schema.NextNonWsSibling();
+            var procedureName = period.Matches(SqlStructureConstants.ENAME_PERIOD) ? period.NextNonWsSibling() : schema;
+            var ddlAsBlock = element.Parent.ChildByName(SqlStructureConstants.ENAME_DDL_AS_BLOCK);
+            var nameIndex = clauseNodes.IndexOf(procedureName);
+            var asBlockIndex = clauseNodes.IndexOf(ddlAsBlock);
+            var parameters = clauseNodes.Skip(nameIndex + 1).Take(asBlockIndex - nameIndex - 1);
+
+            var ddlParens = element.Parent.InsertChildBefore(SqlStructureConstants.ENAME_DDL_PARENS, "", ddlAsBlock);
+            foreach (var node in parameters) {
+                node.Parent.RemoveChild(node);
+                ddlParens.AddChild(node);
+            }
+        }
+
+        foreach (var child in element.Children.ToList())
+        {
+            ForceDdlParens(child);
+        }
+    }
+
     private void AddBlockWrapper(Node element)
     {
         if (element.Name == SqlStructureConstants.ENAME_DDL_AS_BLOCK)
@@ -2385,6 +2409,7 @@ public class SyntaxTreeTransformer {
     {
         ConvertProceduralBlocks(sqlTreeDoc);
         AddLanguageClause(sqlTreeDoc);
+        ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
         AddBlockWrapper(sqlTreeDoc);
 
