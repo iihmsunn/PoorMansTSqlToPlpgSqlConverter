@@ -2429,6 +2429,7 @@ public class SyntaxTreeTransformer {
 
     public void TransformTree(Node sqlTreeDoc)
     {
+        ConvertNStrings(sqlTreeDoc);
         ConvertProceduralBlocks(sqlTreeDoc);
         AddLanguageClause(sqlTreeDoc);
         ForceDdlParens(sqlTreeDoc);
@@ -2492,7 +2493,6 @@ public class SyntaxTreeTransformer {
         UpdateNames(sqlTreeDoc);
         ConvertDataTypes(sqlTreeDoc);
         ConvertIdentity(sqlTreeDoc);
-        ConvertNStrings(sqlTreeDoc);
         FixCommasAfterComments(sqlTreeDoc);
     }
 }
