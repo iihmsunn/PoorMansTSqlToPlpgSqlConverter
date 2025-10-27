@@ -65,7 +65,7 @@ public class SyntaxTreeTransformer {
             var containsWhileLoop = element.ChildByName(SqlStructureConstants.ENAME_WHILE_LOOP) != null;
             var containsTryBlock = element.ChildByName(SqlStructureConstants.ENAME_TRY_BLOCK) != null;
 
-            var semicolon = element.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+            var semicolon = element.LastChildByNameAndText(SqlStructureConstants.ENAME_SEMICOLON);
             if (semicolon == null && !containsWhileLoop && !containsTryBlock)
             {
                 var lastChild = element.Children.LastOrDefault();
