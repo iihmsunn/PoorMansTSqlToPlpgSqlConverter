@@ -1662,6 +1662,11 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "group"))
         {
             var groupClause = element.Parent;
+            if (!groupClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE))
+            {
+                return;
+            }
+
             var statement = groupClause.Parent;
             var previousClause = groupClause.PreviousNonWsSibling();
             var selectClause = statement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
