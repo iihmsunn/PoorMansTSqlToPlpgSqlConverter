@@ -778,7 +778,7 @@ public class SyntaxTreeTransformer {
 
             var drop = element
                 .ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)
-                .ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT)
+                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_STATEMENT)!
                 .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_CLAUSE)!
                 .ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "drop");
 
