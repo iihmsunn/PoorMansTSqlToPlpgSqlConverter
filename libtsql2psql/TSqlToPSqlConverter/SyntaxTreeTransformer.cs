@@ -508,7 +508,7 @@ public class SyntaxTreeTransformer {
     {
         if (element.Name == SqlStructureConstants.ENAME_IF_STATEMENT)
         {
-            var container = element.ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT);
+            var container = element.ChildByNameAndText(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)!;
             WrapInBeginEndBlock(container);
         }
         else if (element.Name == SqlStructureConstants.ENAME_ELSE_CLAUSE)
@@ -538,7 +538,7 @@ public class SyntaxTreeTransformer {
         )
         {
             var beginEndBlock = element
-                .ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)
+                .ChildByNameAndText(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)!
                 .ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT)
                 .ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE)
                 .ChildByName(SqlStructureConstants.ENAME_BEGIN_END_BLOCK);
@@ -778,9 +778,9 @@ public class SyntaxTreeTransformer {
                 .ChildByNameAndText(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "object_id");
 
             var drop = element
-                .ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)
-                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_STATEMENT)!
-                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_CLAUSE)!
+                .ChildByNameAndText(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)?
+                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_STATEMENT)?
+                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_CLAUSE)?
                 .ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "drop");
 
             if (condition == null || drop == null) return;
@@ -1652,7 +1652,7 @@ public class SyntaxTreeTransformer {
             var withinClause = clause.NextNonWsSibling();
             Node withinParens;
 
-            if (withinClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE))
+            if (withinClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE) && withinClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "group") != null)
             {
                 withinParens = withinClause.ChildByName(SqlStructureConstants.ENAME_EXPRESSION_PARENS);
             }
