@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.ComponentModel;
 using System.Data;
 using PoorMansTSqlFormatterLib.Interfaces;
 using PoorMansTSqlFormatterLib.ParseStructure;
@@ -1645,44 +1646,98 @@ public class SyntaxTreeTransformer {
                 element.TextValue = DirectlyMappedFunctions[element.TextValue.ToLower()];
             }
         }
-    
+
         foreach (var child in new List<Node>(element.Children)) {
             ConvertDirectlyMappedFunctions(child);
         }
     }
 
-    private void ConvertStringAggFunction(Node element) {
-        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "string_agg")) {
+    /// <summary>
+    /// parser sometimes splits "group" after "within" into a next clause, which is broken
+    /// or at least very inconvenient, so we make every "within group" stay inside the select clause
+    /// </summary>
+    /// <param name="element"></param>
+    private void FixWithinGroupExpression(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "group"))
+        {
+            var groupClause = element.Parent;
+            var statement = groupClause.Parent;
+            var previousClause = groupClause.PreviousNonWsSibling();
+            var selectClause = statement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            if (selectClause == previousClause)
+            {
+                foreach (var node in groupClause.Children.ToList())
+                {
+                    groupClause.RemoveChild(node);
+                    selectClause.AddChild(node);
+                }
+
+                statement.RemoveChild(groupClause);
+            }
+        }
+
+        foreach (var child in element.Children.ToList())
+        {
+            FixWithinGroupExpression(child);
+        }
+    }
+
+    /// <summary>
+    /// Takes a node and returns a list of it and adjacent nodes between the previous and next comma (or beginning/end of the list)
+    /// </summary>
+    /// <returns></returns>
+    private List<Node> ExpandNodeToListSection(Node node)
+    {
+        var clause = node.Parent;
+        var nodes = clause.Children.ToList();
+        var nodeIndex = nodes.IndexOf(node);
+        var lastComma = nodes.Take(nodeIndex).LastOrDefault(e => e.Matches(SqlStructureConstants.ENAME_COMMA));
+        var nextComma = nodes.Skip(nodeIndex).FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_COMMA));
+        var lastCommaIndex = 0;
+        var nextCommaIndex = nodes.Count;
+        if (lastComma != null)
+        {
+            lastCommaIndex = nodes.IndexOf(lastComma) + 1;
+        }
+
+        if (nextComma != null)
+        {
+            nextCommaIndex = nodes.IndexOf(nextComma);
+        }
+
+        return nodes.Skip(lastCommaIndex).Take(nextCommaIndex - lastCommaIndex).ToList();
+    }
+
+    private void ConvertStringAggFunction(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "string_agg"))
+        {
+            var column = ExpandNodeToListSection(element);
             var clause = element.Parent;
-            var within = clause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE, "within");
+            var within = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "within"));
             if (within == null) return;
 
-            var withinClause = clause.NextNonWsSibling();
-            Node withinParens;
+            var group = within.NextNonWsSibling();
+            var withinParens = group.NextNonWsSibling();
 
-            if (withinClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE) && withinClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "group") != null)
-            {
-                withinParens = withinClause.ChildByName(SqlStructureConstants.ENAME_EXPRESSION_PARENS);
-            }
-            else
-            {
-                var group = within.NextNonWsSibling();
-                withinParens = group.NextNonWsSibling();
-            }
-            
             clause.RemoveChild(within);
-            clause.Parent.RemoveChild(withinClause);
+            clause.RemoveChild(group);
+            clause.RemoveChild(withinParens);
 
             var stringAggParens = element.NextNonWsSibling();
-            foreach (var _clause in withinParens.Children) {
-                foreach (var node in new List<Node>(_clause.Children)) {
+            foreach (var _clause in withinParens.Children)
+            {
+                foreach (var node in new List<Node>(_clause.Children))
+                {
                     node.Parent.RemoveChild(node);
                     stringAggParens.AddChild(node);
                 }
             }
         }
-    
-        foreach (var child in new List<Node>(element.Children)) {
+
+        foreach (var child in new List<Node>(element.Children))
+        {
             ConvertStringAggFunction(child);
         }
     }
@@ -2478,8 +2533,7 @@ public class SyntaxTreeTransformer {
         
         ForceIfBeginEnd(sqlTreeDoc);
         ConvertConditions(sqlTreeDoc);
-
-        UpdateSelectStatements(sqlTreeDoc);
+        
         ConvertPivot(sqlTreeDoc);
         ConvertUnpivot(sqlTreeDoc);
         ConvertDelete(sqlTreeDoc);
@@ -2490,7 +2544,9 @@ public class SyntaxTreeTransformer {
         RemoveUnnecessaryStatements(sqlTreeDoc);
 
         ConvertDirectlyMappedFunctions(sqlTreeDoc);
+        FixWithinGroupExpression(sqlTreeDoc);
         ConvertStringAggFunction(sqlTreeDoc);
+        UpdateSelectStatements(sqlTreeDoc);
         ConvertForXmlPathStringAgg(sqlTreeDoc);
         ConvertFormatFunction(sqlTreeDoc);
         ConvertDatePartFunction(sqlTreeDoc);
