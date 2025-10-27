@@ -514,8 +514,8 @@ public class SyntaxTreeTransformer {
         {
             var container = element.ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT);
             var nestedIf = container
-                .ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT)
-                .ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE)
+                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_STATEMENT)!
+                .ChildByNameAndText(SqlStructureConstants.ENAME_SQL_CLAUSE)!
                 .ChildByName(SqlStructureConstants.ENAME_IF_STATEMENT);
 
             if (nestedIf == null)
