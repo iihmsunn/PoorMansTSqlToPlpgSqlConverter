@@ -930,25 +930,24 @@ public class SyntaxTreeTransformer {
     {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "cast"))
         {
-            var parens = element.NextSibling();
+            var parens = element.NextNonWsSibling();
             var asKeyword = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
+            var asIndex = parens.Children.ToList().IndexOf(asKeyword);
             var type = asKeyword.NextNonWsSibling();
             var typeParens = parens.ChildByName(SqlStructureConstants.ENAME_DDLDETAIL_PARENS);
-            var value = parens.Children.First(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
-            var valueParens = parens.ChildByName(SqlStructureConstants.ENAME_FUNCTION_PARENS);
+            var value = parens.Children.Take(asIndex).ToList();
             var clause = element.Parent;
-            parens.RemoveChild(value);
 
-            clause.InsertChildBefore(value, element);
-            if (valueParens != null) {
-                clause.RemoveChild(valueParens);
-                clause.InsertChildAfter(valueParens, value);
-                value = valueParens;
+            foreach (var node in value)
+            {
+                parens.RemoveChild(node);
+                clause.InsertChildBefore(node, element);
             }
+            
             clause.RemoveChild(element);
             clause.RemoveChild(parens);
 
-            var temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", value);
+            var temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", value.Last());
             clause.InsertChildAfter(type, temp);
             if (typeParens != null)
             {
@@ -968,11 +967,11 @@ public class SyntaxTreeTransformer {
         {
             var parens = element.NextSibling();
             var type = parens.ChildByName(SqlStructureConstants.ENAME_DATATYPE_KEYWORD);
-            var typeParens = parens.ChildByName(SqlStructureConstants.ENAME_DDLDETAIL_PARENS);
-            var value = parens.Children.First(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
             var _as = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
+            var _asIndex = parens.Children.ToList().IndexOf(_as);
+            var value = parens.Children.Take(_asIndex);
             parens.RemoveChild(_as);
-            parens.InsertChildAfter(SqlStructureConstants.ENAME_COMMA, ",", value);
+            parens.InsertChildAfter(SqlStructureConstants.ENAME_COMMA, ",", value.Last());
             parens.InsertChildBefore(SqlStructureConstants.ENAME_OTHERKEYWORD, "null", type);
             parens.InsertChildBefore(SqlStructureConstants.ENAME_PERIOD, "::", type);
         }
