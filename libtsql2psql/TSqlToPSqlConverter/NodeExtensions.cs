@@ -154,32 +154,13 @@ public static class ConverterNodeExtensions {
         return node.Children.FirstOrDefault()?.ChildByNameAndText(name, text);
     }
 
-    public static string ToSnakeCase(this string text)
+    public static string ToSnakeCase(this string str)
     {
-        if (text == null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
-        if (text.Length < 2)
-        {
-            return text.ToLowerInvariant();
-        }
-        var sb = new StringBuilder();
-        sb.Append(char.ToLowerInvariant(text[0]));
-        for (int i = 1; i < text.Length; ++i)
-        {
-            char c = text[i];
-            if (char.IsUpper(c))
-            {
-                sb.Append('_');
-                sb.Append(char.ToLowerInvariant(c));
-            }
-            else
-            {
-                sb.Append(c);
-            }
-        }
-        return sb.ToString();
+        return string.Concat(
+        str.Select((x, i) =>
+            i > 0 && char.IsUpper(x) && (char.IsLower(str[i - 1]) || i < str.Length - 1 && char.IsLower(str[i + 1]))
+                ? "_" + x
+                : x.ToString())).ToLowerInvariant();
     }
 
     public static bool IsComment(this Node node)

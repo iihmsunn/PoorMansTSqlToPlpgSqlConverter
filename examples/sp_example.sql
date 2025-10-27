@@ -3,7 +3,7 @@
 */
 alter procedure [dbo].[sp_request_test] (
 	@username nvarchar(256),
-	@sessionId nvarchar(256) = null,
+	@sessionID nvarchar(256) = null,
 	@parameters nvarchar(max), --comment
 	@list dbo.type_itemsList READONLY,
 	@test1 nvarchar(max) output
