@@ -55,6 +55,10 @@ as
 	select string_agg(field1, ',') within group (order by field1) as test
 	from #test1
 
+
+	select cast(string_agg(field1, ',') within group (order by field1) as nvarchar(max)) as test
+	from #test1
+	
 	insert into #test (a int)
 	exec as_trace @str = 'asd'
 	

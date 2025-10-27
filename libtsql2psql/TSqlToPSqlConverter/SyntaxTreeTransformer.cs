@@ -1649,7 +1649,18 @@ public class SyntaxTreeTransformer {
             if (within == null) return;
 
             var withinClause = clause.NextNonWsSibling();
-            var withinParens = withinClause.ChildByName(SqlStructureConstants.ENAME_EXPRESSION_PARENS);
+            Node withinParens;
+
+            if (withinClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE))
+            {
+                withinParens = withinClause.ChildByName(SqlStructureConstants.ENAME_EXPRESSION_PARENS);
+            }
+            else
+            {
+                var group = within.NextNonWsSibling();
+                withinParens = group.NextNonWsSibling();
+            }
+            
             clause.RemoveChild(within);
             clause.Parent.RemoveChild(withinClause);
 
