@@ -1614,7 +1614,16 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "format")) {
             element.TextValue = "to_char";
             var parens = element.NextNonWsSibling();
-            var formatString = parens.ChildByName(SqlStructureConstants.ENAME_STRING);
+            var formatString = parens.ChildByNameAndText(SqlStructureConstants.ENAME_STRING)!;
+            var comma = formatString.NextNonWsSibling();
+            var localeString = comma?.NextNonWsSibling();
+            if (comma != null && localeString != null)
+            {
+                parens.RemoveChild(comma);
+                parens.RemoveChild(localeString);
+                parens.Parent.InsertChildAfter(SqlStructureConstants.ENAME_COMMENT_MULTILINE, "converter warning: FORMAT() was converted to TO_CHAR() but specified locale was lost", parens);
+            }
+
             var isNumber = formatString.TextValue.Contains("0") || formatString.TextValue.Contains("#");
             if (isNumber) {
                 formatString.TextValue = "FM" + formatString.TextValue.Replace("#", "9").Replace(".", "D");
