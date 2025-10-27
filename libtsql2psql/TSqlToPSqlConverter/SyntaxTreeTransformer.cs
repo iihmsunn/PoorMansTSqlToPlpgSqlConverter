@@ -1012,10 +1012,17 @@ public class SyntaxTreeTransformer {
             updateClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
             updateClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "__target__");
 
-            var whereClause = updateStatement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "where") != null);
-            var temp = WrapInExpressionParens(whereClause);
-            temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_AND_OPERATOR, "", temp);
-            temp.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "and");
+            Node temp;
+            var whereClause = updateStatement.Children.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "where") != null);
+            if (whereClause != null) {
+                temp = WrapInExpressionParens(whereClause);
+                temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_AND_OPERATOR, "", temp);
+                temp.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "and");
+            } else {
+                whereClause = updateStatement.InsertChildAfter(SqlStructureConstants.ENAME_SQL_CLAUSE, "", fromClause);
+                temp = whereClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "where"); 
+            }
+            
             temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERNODE, "__target__", temp);
             temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, ".", temp);
             temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERNODE, "ctid", temp);
