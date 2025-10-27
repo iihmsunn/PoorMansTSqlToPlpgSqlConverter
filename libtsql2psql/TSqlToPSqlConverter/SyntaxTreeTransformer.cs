@@ -1547,6 +1547,11 @@ public class SyntaxTreeTransformer {
         if (arrayVariables == null) arrayVariables = [];
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert")) {
             var insertClause = element.Parent.Parent;
+            if (insertClause.Parent.Matches(SqlStructureConstants.ENAME_MERGE_ACTION))
+            {
+                return;
+            }
+            
             var tableName = insertClause.LastChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
             if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
                 return;
@@ -1669,13 +1674,13 @@ public class SyntaxTreeTransformer {
 
             var statement = groupClause.Parent;
             var previousClause = groupClause.PreviousNonWsSibling();
-            var selectClause = statement.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
-            if (selectClause == previousClause)
+            var selectClause = statement.Children.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            if (selectClause == previousClause || selectClause == null)
             {
                 foreach (var node in groupClause.Children.ToList())
                 {
                     groupClause.RemoveChild(node);
-                    selectClause.AddChild(node);
+                    (selectClause ?? statement).AddChild(node);
                 }
 
                 statement.RemoveChild(groupClause);

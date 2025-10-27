@@ -180,7 +180,8 @@ public static class ConverterNodeExtensions {
             || node.TextValue?.ToLower() == "value"
             || node.TextValue?.ToLower() == "text"
             || node.TextValue?.ToLower() == "status"
-            || node.TextValue?.ToLower() == "str";
+            || node.TextValue?.ToLower() == "str"
+            || node.TextValue?.ToLower() == "datetime";
     }
 
     public static Node FollowingNonWsChild(this Node value, Node fromChild, bool allowComments = false)
