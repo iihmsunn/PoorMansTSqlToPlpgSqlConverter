@@ -1841,7 +1841,7 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "dateadd")) {
             var clause = element.Parent;
             var parens = element.NextNonWsSibling();
-            var part = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
+            var part = parens.Children.First(e => e.Name == SqlStructureConstants.ENAME_OTHERNODE || e.Name == SqlStructureConstants.ENAME_FUNCTION_KEYWORD)!;
             var comma1 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
             var mod = comma1.NextNonWsSibling();
             var comma2 = mod.NextNonWsSibling();
@@ -2112,6 +2112,10 @@ public class SyntaxTreeTransformer {
     private void ConvertOutputClause(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "output")) {
             var outputClause = element.Parent;
+            if (!outputClause.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE))
+            {
+                return;
+            }
 
             var statement = outputClause.Parent;
             
