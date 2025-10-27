@@ -175,7 +175,10 @@ public static class ConverterNodeExtensions {
 
     public static bool IsName(this Node node)
     {
-        return node.Name == SqlStructureConstants.ENAME_OTHERNODE || node.Name == SqlStructureConstants.ENAME_BRACKET_QUOTED_NAME || node.TextValue?.ToLower() == "value";
+        return node.Name == SqlStructureConstants.ENAME_OTHERNODE 
+            || node.Name == SqlStructureConstants.ENAME_BRACKET_QUOTED_NAME 
+            || node.TextValue?.ToLower() == "value"
+            || node.TextValue?.ToLower() == "text";
     }
 
     public static Node FollowingNonWsChild(this Node value, Node fromChild, bool allowComments = false)
