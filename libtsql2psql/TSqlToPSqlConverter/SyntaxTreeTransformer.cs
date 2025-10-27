@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Data;
 using PoorMansTSqlFormatterLib.Interfaces;
 using PoorMansTSqlFormatterLib.ParseStructure;
 
@@ -2323,6 +2324,14 @@ public class SyntaxTreeTransformer {
             var clause = element.Parent;
             var code = element.NextNonWsSibling();
             var comma = code.NextNonWsSibling();
+
+            element.TextValue = "raise";
+
+            if (comma == null)
+            {
+                return;
+            }
+
             var msg = comma.NextNonWsSibling();
             var comma2 = msg.NextNonWsSibling();
             var irrelevant = comma2.NextNonWsSibling();
@@ -2334,7 +2343,7 @@ public class SyntaxTreeTransformer {
             clause.RemoveChild(irrelevant);
 
             element.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
-            element.TextValue = "raise";
+            
             var temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERKEYWORD, "exception", element);
             clause.InsertChildAfter(msg, temp);
             temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERKEYWORD, "using", msg);
