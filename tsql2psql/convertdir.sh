@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+executable=./bin/Release/net9.0/tsql2psql
+
 while getopts ":i:o:" opt; do
   case $opt in
     i) inputdir="$OPTARG"
@@ -20,5 +22,5 @@ done
 
 for filename in $inputdir/*.sql; do
   echo "Processing $filename..."
-  dotnet run -i $filename -o $outputdir/$(basename $filename)
+  $executable -i $filename -o $outputdir/$(basename $filename)
 done
