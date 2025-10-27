@@ -2121,7 +2121,7 @@ public class SyntaxTreeTransformer {
             
             var insertClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "") != null);
             var updateClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "update") != null);
-            var mergeClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "merge") != null);
+            var mergeClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_MERGE_CLAUSE) != null);
             var deleteClause = statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete") != null);
             var mainClause = insertClause ?? updateClause ?? mergeClause ?? deleteClause;
             
