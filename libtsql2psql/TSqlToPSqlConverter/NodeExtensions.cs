@@ -128,8 +128,13 @@ public static class ConverterNodeExtensions {
         return "";
     }
 
-    public static Node? ChildByNameAndText(this Node node, string name, string? text = null) {
+    public static Node? ChildByNameAndText(this Node node, string name, string? text = null)
+    {
         return node.Children.FirstOrDefault(e => e.Name == name && (text == null || e.TextValue.ToLower() == text));
+    }
+    
+    public static Node? LastChildByNameAndText(this Node node, string name, string? text = null) {
+        return node.Children.LastOrDefault(e => e.Name == name && (text == null || e.TextValue.ToLower() == text));
     }
 
     public static bool Matches(this Node node, string name, string? text = null) {

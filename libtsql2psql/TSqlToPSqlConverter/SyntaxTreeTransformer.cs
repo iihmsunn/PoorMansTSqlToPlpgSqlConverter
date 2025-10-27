@@ -1521,7 +1521,11 @@ public class SyntaxTreeTransformer {
 
     private void UnnestArrays(Node element, List<string>? arrayVariables) {
         if (element.Matches(SqlStructureConstants.ENAME_SELECTIONTARGET)) {
-            var tableName = element.Children.First(e => e.Name == SqlStructureConstants.ENAME_WHITESPACE);
+            if (element.Parent.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)) {
+                return;
+            }
+
+            var tableName = element.Children.First(e => e.IsName());
             var tableAlias = tableName.NextNonWsSibling();
             if (!(arrayVariables?.Any(e => e.ToLower() == tableName.TextValue.ToLower()) ?? false)) {
                 return;
@@ -1542,7 +1546,7 @@ public class SyntaxTreeTransformer {
         if (arrayVariables == null) arrayVariables = [];
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert")) {
             var insertClause = element.Parent.Parent;
-            var tableName = insertClause.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            var tableName = insertClause.LastChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
             if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
                 return;
             }
