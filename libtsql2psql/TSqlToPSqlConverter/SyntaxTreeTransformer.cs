@@ -2397,7 +2397,7 @@ public class SyntaxTreeTransformer {
 
     private void FixDdlOtherBlockSemicolon(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_DDL_OTHER_BLOCK)) {
-            var semicolon = element.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+            var semicolon = element.LastChildByNameAndText(SqlStructureConstants.ENAME_SEMICOLON);
             if (semicolon == null) return;
 
             element.RemoveChild(semicolon);
