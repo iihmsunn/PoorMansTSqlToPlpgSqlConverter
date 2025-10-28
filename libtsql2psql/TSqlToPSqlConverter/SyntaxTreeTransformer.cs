@@ -1573,7 +1573,7 @@ public class SyntaxTreeTransformer {
                 return;
             }
             
-            var tableName = insertClause.LastChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE)!;
+            var tableName = insertClause.Children.Last(e => e.IsName());
             if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
                 return;
             }
