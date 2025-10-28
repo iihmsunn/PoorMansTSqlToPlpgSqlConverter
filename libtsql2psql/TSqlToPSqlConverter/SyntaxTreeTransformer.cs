@@ -1922,8 +1922,10 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void ConvertDateAddFunction(Node element) {
-        if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "dateadd")) {
+    private void ConvertDateAddFunction(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "dateadd"))
+        {
             var clause = element.Parent;
             var parens = element.NextNonWsSibling();
             var part = parens.Children.First(e => e.Name == SqlStructureConstants.ENAME_OTHERNODE || e.Name == SqlStructureConstants.ENAME_FUNCTION_KEYWORD)!;
@@ -1936,7 +1938,8 @@ public class SyntaxTreeTransformer {
             parens.RemoveChild(date);
             var newParens = clause.InsertChildBefore(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", element);
             newParens.AddChild(date);
-            if (dateDetails != null && dateDetails.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)) {
+            if (dateDetails != null && dateDetails.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS))
+            {
                 parens.RemoveChild(dateDetails);
                 newParens.AddChild(dateDetails);
             }
@@ -1948,16 +1951,49 @@ public class SyntaxTreeTransformer {
             clause.RemoveChild(element);
             clause.RemoveChild(parens);
         }
-            
+
         foreach (var child in new List<Node>(element.Children))
         {
             ConvertDateAddFunction(child);
         }
     }
 
+    /// <summary>
+    /// the parser may choose to but everything after "between" keyword inside of between expression, even other comma separated things, which is broken
+    /// this function will split the comma after "between" and what comes after it and move it to the parent clause
+    /// </summary>
+    /// <param name="element"></param>
+    private void FixBetweenKeyword(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_BETWEEN_CONDITION))
+        {
+            var clause = element.Parent;
+            var upperBound = element.ChildByName(SqlStructureConstants.ENAME_BETWEEN_UPPERBOUND);
+            var comma = upperBound.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA);
+            if (comma == null)
+            {
+                return;
+            }
+
+            var commaIndex = upperBound.Children.ToList().IndexOf(comma);
+            var nodesToMove = upperBound.Children.Skip(commaIndex).ToList();
+            foreach (var node in nodesToMove)
+            {
+                upperBound.RemoveChild(node);
+                clause.AddChild(node);
+            }
+        }
+
+        foreach (var child in element.Children.ToList())
+        {
+            FixBetweenKeyword(child);
+        }
+    }
+
     private void ConvertIifFunction(Node element)
     {
-        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "iif")) {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "iif"))
+        {
             var parens = element.NextNonWsSibling();
             var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
             var nodeList = parens.Children.ToList();
@@ -1973,30 +2009,33 @@ public class SyntaxTreeTransformer {
             var opener = caseStatement.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
             opener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "case");
             caseStatement.AddChild(SqlStructureConstants.ENAME_CASE_INPUT, "");
-            
+
             var caseWhen = caseStatement.AddChild(SqlStructureConstants.ENAME_CASE_WHEN, "");
             var whenOpener = caseWhen.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
             whenOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "when");
             var caseWhenBody = caseWhen.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
-            foreach (var node in condition) {
+            foreach (var node in condition)
+            {
                 node.Parent.RemoveChild(node);
                 caseWhenBody.AddChild(node);
             }
-            
+
             var then = caseWhen.AddChild(SqlStructureConstants.ENAME_CASE_THEN, "");
             var thenOpener = then.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
             thenOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "then");
             var thenBody = then.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
-            foreach(var node in truePart) {
+            foreach (var node in truePart)
+            {
                 node.Parent.RemoveChild(node);
                 thenBody.AddChild(node);
             }
-            
+
             var caseElse = caseStatement.AddChild(SqlStructureConstants.ENAME_CASE_ELSE, "");
             var elseOpener = caseElse.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
             elseOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "else");
             var elseBody = caseElse.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
-            foreach (var node in falsePart) {
+            foreach (var node in falsePart)
+            {
                 node.Parent.RemoveChild(node);
                 elseBody.AddChild(node);
             }
@@ -2532,6 +2571,7 @@ public class SyntaxTreeTransformer {
         ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
         AddBlockWrapper(sqlTreeDoc);
+        FixBetweenKeyword(sqlTreeDoc);
 
         int selectCounter = 0;
         ConvertProcedureSelectsToRefcursors(sqlTreeDoc, ref selectCounter);
