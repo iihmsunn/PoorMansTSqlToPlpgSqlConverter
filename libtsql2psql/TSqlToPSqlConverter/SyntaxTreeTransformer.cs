@@ -2286,6 +2286,11 @@ public class SyntaxTreeTransformer {
             }
 
             var tableName = element.NextNonWsSibling();
+            if (tableName == null)
+            {
+                return;
+            }
+
             deleteClause.RemoveChild(tableName);
 
             fromClause = statement.InsertChildAfter(SqlStructureConstants.ENAME_SQL_CLAUSE, "", deleteClause);
