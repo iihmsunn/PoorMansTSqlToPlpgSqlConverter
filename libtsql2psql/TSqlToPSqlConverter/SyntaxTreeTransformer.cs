@@ -1901,20 +1901,27 @@ public class SyntaxTreeTransformer {
             var stuffParens = expression.Parent;
             var stuffFunction = stuffParens.PreviousNonWsSibling();
             var usingStuff = false;
+            Node? separatorNode = null;
+
+            var selectClause = expression.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
             if (stuffParens.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)
                 && (stuffFunction?.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "stuff") ?? false)) {
-                usingStuff = true;
+                
+                var separatorNodes = selectClause.ChildrenByName(SqlStructureConstants.ENAME_STRING).ToList();
+                if (separatorNodes.Count == 1)
+                {
+                    separatorNode = separatorNodes.First();
+                    usingStuff = true;
+                }
             }
 
             // if stuff() function is used, attempt to use string_agg() with real separator and remove stuff()
             // otherwise use string_agg with '' as separator
-
-            var selectClause = expression.Children.First(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            
             expression.RemoveChild(clause);
             var separator = "";
             if (usingStuff) {
-                var separatorNode = selectClause.ChildByName(SqlStructureConstants.ENAME_STRING);
-                var plusSign = separatorNode.NextNonWsSibling();
+                var plusSign = separatorNode!.NextNonWsSibling();
 
                 if (separatorNode != null && plusSign.Matches(SqlStructureConstants.ENAME_OTHEROPERATOR, "+")) {
                     separator = separatorNode.TextValue;
