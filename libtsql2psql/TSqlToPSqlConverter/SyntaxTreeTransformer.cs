@@ -932,6 +932,7 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "cast"))
         {
             var parens = element.NextNonWsSibling();
+
             var asKeyword = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
             var asIndex = parens.Children.ToList().IndexOf(asKeyword);
             var type = asKeyword.NextNonWsSibling();
@@ -1625,7 +1626,8 @@ public class SyntaxTreeTransformer {
             arrayAggParens.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "_t");
             
             foreach (var clause in updatedTail) {
-                newArrayParens.AddChild((Node)clause.Clone());
+                clause.Parent.RemoveChild(clause);
+                newArrayParens.AddChild(clause);
             }
 
             insertStatement.Parent.RemoveChild(insertStatement);
