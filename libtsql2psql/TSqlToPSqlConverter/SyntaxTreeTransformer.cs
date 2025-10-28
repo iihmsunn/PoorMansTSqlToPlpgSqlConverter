@@ -1675,14 +1675,36 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "format")) {
             element.TextValue = "to_char";
             var parens = element.NextNonWsSibling();
-            var formatString = parens.ChildByNameAndText(SqlStructureConstants.ENAME_STRING)!;
-            var comma = formatString.NextNonWsSibling();
-            var localeString = comma?.NextNonWsSibling();
-            if (comma != null && localeString != null)
+            var formatComma = parens.ChildByName(SqlStructureConstants.ENAME_COMMA);
+            var formatNodes = parens.Children.ToList();
+            var formatCommaIndex = formatNodes.IndexOf(formatComma);
+            var localeCommaIndex = formatNodes.Count;
+            var localeComma = formatNodes.Skip(formatCommaIndex + 1).FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_COMMA));
+            var localeString = localeComma?.NextNonWsSibling();
+            if (localeComma != null)
             {
-                parens.RemoveChild(comma);
+                localeCommaIndex = formatNodes.IndexOf(localeComma);
+            }
+
+            var formatStringNodes = formatNodes
+                .Skip(formatCommaIndex + 1)
+                .Take(localeCommaIndex - formatCommaIndex)
+                .Where(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE)
+                .ToList();
+
+            var formatString = parens.ChildByNameAndText(SqlStructureConstants.ENAME_STRING);
+
+            if (localeComma != null && localeString != null)
+            {
+                parens.RemoveChild(localeComma);
                 parens.RemoveChild(localeString);
                 parens.Parent.InsertChildAfter(SqlStructureConstants.ENAME_COMMENT_MULTILINE, "converter warning: FORMAT() was converted to TO_CHAR() but specified locale was lost", parens);
+            }
+
+            if (formatString == null)
+            {
+                parens.Parent.InsertChildAfter(SqlStructureConstants.ENAME_COMMENT_MULTILINE, "converter warning: FORMAT() was converted to TO_CHAR() but the format string was unable to be converted", parens);
+                return;
             }
 
             var isNumber = formatString.TextValue.Contains("0") || formatString.TextValue.Contains("#");
