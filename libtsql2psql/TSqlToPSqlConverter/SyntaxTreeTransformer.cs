@@ -110,6 +110,32 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ForceDdlAsBlock(Node element)
+    {
+        if (element.Name == SqlStructureConstants.ENAME_DDL_PROCEDURAL_BLOCK)
+        {
+            var asBlock = element.ChildByName(SqlStructureConstants.ENAME_DDL_AS_BLOCK);
+            if (asBlock != null) return;
+
+            var contentStatement = element.Parent.Parent.NextNonWsSibling();
+
+            asBlock = element.AddChild(SqlStructureConstants.ENAME_DDL_AS_BLOCK, "");
+            var asBlockOpener = asBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
+            asBlockOpener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
+
+            var body = asBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_GENERALCONTENT, "");
+            contentStatement.Parent.RemoveChild(contentStatement);
+            body.AddChild(contentStatement);
+
+            return;
+        }
+
+        foreach (var child in element.Children.ToList())
+        {
+            ForceDdlAsBlock(child);
+        }
+    }
+
     private void AddLanguageClause(Node element)
     {
         if (element.Name == SqlStructureConstants.ENAME_DDL_PROCEDURAL_BLOCK)
@@ -898,7 +924,7 @@ public class SyntaxTreeTransformer {
                 clause.AddChild(tableName);
                 clause.AddChild((Node)tableParens.Clone());
 
-                var returnStatement = functionBody.Children.First(s => s.Children.First().ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return") != null);
+                var returnStatement = functionBody.Children.First(s => s.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return") != null) != null);
                 var returnClause = returnStatement.Children.First();
                 var returnKeyword = returnClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return");
                 var varName = returnKeyword!.NextNonWsSibling();
@@ -2640,6 +2666,7 @@ public class SyntaxTreeTransformer {
     {
         ConvertNStrings(sqlTreeDoc);
         ConvertProceduralBlocks(sqlTreeDoc);
+        ForceDdlAsBlock(sqlTreeDoc);
         AddLanguageClause(sqlTreeDoc);
         ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
