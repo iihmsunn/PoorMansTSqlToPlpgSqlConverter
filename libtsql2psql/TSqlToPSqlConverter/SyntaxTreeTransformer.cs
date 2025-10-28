@@ -1288,9 +1288,18 @@ public class SyntaxTreeTransformer {
                 var varName = nameSplit.Last();
                 var currentObject = nestedJsonColumns;
 
-                var asKeyword = column.First(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "as"));
-                var asIndex = column.IndexOf(asKeyword);
-                var value = column.Take(asIndex).Where(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE).ToList();
+                var asKeyword = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "as"));
+                
+                List<Node> value;
+                if (asKeyword != null)
+                {
+                    var asIndex = column.IndexOf(asKeyword);
+                    value = column.Take(asIndex).Where(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE).ToList();
+                }
+                else
+                {
+                    value = column;
+                }
 
                 foreach (var namePart in nameSplit)
                 {
