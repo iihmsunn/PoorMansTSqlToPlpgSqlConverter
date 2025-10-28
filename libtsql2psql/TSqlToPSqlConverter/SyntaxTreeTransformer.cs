@@ -1750,8 +1750,10 @@ public class SyntaxTreeTransformer {
             }
 
             var statement = groupClause.Parent;
+            var statementNodes = statement.Children.ToList();
+            var groupClauseIndex = statementNodes.IndexOf(groupClause);
             var previousClause = groupClause.PreviousNonWsSibling();
-            var selectClause = statement.Children.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
+            var selectClause = statementNodes.Take(groupClauseIndex).LastOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "select") != null);
             if (selectClause == previousClause || selectClause == null)
             {
                 foreach (var node in groupClause.Children.ToList())
