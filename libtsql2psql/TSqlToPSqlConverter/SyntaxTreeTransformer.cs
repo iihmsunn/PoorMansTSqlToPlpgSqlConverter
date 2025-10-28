@@ -870,11 +870,33 @@ public class SyntaxTreeTransformer {
     {
         if (element.Matches(SqlStructureConstants.ENAME_WHILE_LOOP))
         {
-            var beginEndBlock = element
+            var clause = element
                 .ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)
                 .ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT)
-                .ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE)
+                .ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE);
+
+            var beginEndBlock = clause
                 .ChildByName(SqlStructureConstants.ENAME_BEGIN_END_BLOCK);
+
+            if (beginEndBlock == null)
+            {
+                var content = clause.Children.ToList();
+                beginEndBlock = clause.AddChild(SqlStructureConstants.ENAME_BEGIN_END_BLOCK, "");
+                var opener = beginEndBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_OPEN, "");
+                opener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "begin");
+                var body = beginEndBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_MULTISTATEMENT, "");
+                var statement = body.AddChild(SqlStructureConstants.ENAME_SQL_STATEMENT, "");
+                var beginEndClause = statement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+
+                foreach (var node in content)
+                {
+                    node.Parent.RemoveChild(node);
+                    beginEndClause.AddChild(node);
+                }
+
+                var closer = beginEndBlock.AddChild(SqlStructureConstants.ENAME_CONTAINER_CLOSE, "");
+                closer.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "end");
+            }
 
             var begin = beginEndBlock
                 .ChildByName(SqlStructureConstants.ENAME_CONTAINER_OPEN)
