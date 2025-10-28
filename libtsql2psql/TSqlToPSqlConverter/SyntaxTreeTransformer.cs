@@ -967,9 +967,20 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "try_cast"))
         {
             var parens = element.NextSibling();
-            var type = parens.ChildByName(SqlStructureConstants.ENAME_DATATYPE_KEYWORD);
             var _as = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "as")!;
+
+            if (_as == null)
+            {
+                // it's not currently clear how this happens, probably because of how the tree gets rearranged during the processing
+                // but sometimes this function can be called twice on the same node, in which case AS keyword doesn't exist already
+                // then just exit
+                return;
+            }
+
             var _asIndex = parens.Children.ToList().IndexOf(_as);
+
+            //we have to explicitly look for datatype after "as" because column name may happen to be a datatype keyword
+            var type = parens.Children.Skip(_asIndex).First(e => e.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD));
             var value = parens.Children.Take(_asIndex);
             parens.RemoveChild(_as);
             parens.InsertChildAfter(SqlStructureConstants.ENAME_COMMA, ",", value.Last());
