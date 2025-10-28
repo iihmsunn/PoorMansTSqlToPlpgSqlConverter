@@ -1,4 +1,4 @@
-create or replace function split(string text, separator text)
+create or replace function string_split(string text, separator text)
 returns setof text
 language 'sql' immutable
 as $$
