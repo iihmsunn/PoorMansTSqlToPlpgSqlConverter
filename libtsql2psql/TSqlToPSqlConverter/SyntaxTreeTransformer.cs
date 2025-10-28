@@ -1289,7 +1289,7 @@ public class SyntaxTreeTransformer {
                 var currentObject = nestedJsonColumns;
 
                 var asKeyword = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "as"));
-                
+
                 List<Node> value;
                 if (asKeyword != null)
                 {
@@ -2009,7 +2009,7 @@ public class SyntaxTreeTransformer {
             var comma1Index = nodeList.IndexOf(commas[0]);
             var comma2Index = nodeList.IndexOf(commas[1]);
             var condition = nodeList.Take(comma1Index);
-            var truePart = nodeList.Skip(comma1Index + 1).Take(comma2Index - comma1Index);
+            var truePart = nodeList.Skip(comma1Index + 1).Take(comma2Index - comma1Index).Where(e => !e.Matches(SqlStructureConstants.ENAME_COMMA));
             var falsePart = nodeList.Skip(comma2Index + 1);
 
             var clause = element.Parent;
