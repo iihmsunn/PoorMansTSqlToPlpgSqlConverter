@@ -2522,7 +2522,7 @@ public class SyntaxTreeTransformer {
                 return;
             }
 
-            var procedureName = procedureBlock.Parent.ChildByName(SqlStructureConstants.ENAME_DDL_PARENS).PreviousNonWsSibling().TextValue;
+            var procedureName = procedureBlock.Parent.ChildByNameAndText(SqlStructureConstants.ENAME_DDL_PARENS)!.PreviousNonWsSibling().TextValue;
 
             selectNumber = selectNumber + 1;
             var refcursorName = $"_select{selectNumber}";
