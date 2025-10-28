@@ -505,6 +505,39 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    /// <summary>
+    /// always follow insert keyword with into keyword, except when inside merge statement
+    /// </summary>
+    /// <param name="element"></param>
+    private void ForceInsertInto(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert"))
+        {
+            if (element.Parent.Matches(SqlStructureConstants.ENAME_COMPOUNDKEYWORD))
+            {
+                return;
+            }
+
+            if (element.Parent.Parent.Parent.Matches(SqlStructureConstants.ENAME_MERGE_ACTION))
+            {
+                return;
+            }
+
+            var clause = element.Parent;
+            var compoundKeyword = clause.InsertChildAfter(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "", element);
+            compoundKeyword.Attributes["simpleText"] = "insert into";
+
+            element.Parent.RemoveChild(element);
+            compoundKeyword.AddChild(element);
+            compoundKeyword.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+        }
+
+        foreach (var child in new List<Node>(element.Children))
+        {
+            ForceInsertInto(child);
+        }
+    }
+
     private void ForceIfBeginEnd(Node element)
     {
         if (element.Name == SqlStructureConstants.ENAME_IF_STATEMENT)
@@ -2581,6 +2614,7 @@ public class SyntaxTreeTransformer {
         AddLanguageClause(sqlTreeDoc);
         ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
+        ForceInsertInto(sqlTreeDoc);
         AddBlockWrapper(sqlTreeDoc);
         FixBetweenKeyword(sqlTreeDoc);
 
