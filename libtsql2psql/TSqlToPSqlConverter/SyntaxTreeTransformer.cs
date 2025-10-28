@@ -1675,7 +1675,7 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERNODE, "format")) {
             element.TextValue = "to_char";
             var parens = element.NextNonWsSibling();
-            var formatComma = parens.ChildByName(SqlStructureConstants.ENAME_COMMA);
+            var formatComma = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
             var formatNodes = parens.Children.ToList();
             var formatCommaIndex = formatNodes.IndexOf(formatComma);
             var localeCommaIndex = formatNodes.Count;
