@@ -2694,8 +2694,8 @@ public class SyntaxTreeTransformer {
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertNStrings(sqlTreeDoc);
-        ConvertProceduralBlocks(sqlTreeDoc);
         ForceDdlAsBlock(sqlTreeDoc);
+        ConvertProceduralBlocks(sqlTreeDoc);
         AddLanguageClause(sqlTreeDoc);
         ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
