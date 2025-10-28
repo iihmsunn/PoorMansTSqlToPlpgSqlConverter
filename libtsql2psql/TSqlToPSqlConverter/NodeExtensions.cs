@@ -173,17 +173,22 @@ public static class ConverterNodeExtensions {
         return node.Name == SqlStructureConstants.ENAME_COMMENT_MULTILINE || node.Name == SqlStructureConstants.ENAME_COMMENT_SINGLELINE;
     }
 
+    public static string[] KeywordsAcceptableAsColumnNames = [
+        "value",
+        "text",
+        "status",
+        "str",
+        "datetime",
+        "date",
+        "query",
+        "language"
+    ];
+
     public static bool IsName(this Node node)
     {
-        return node.Name == SqlStructureConstants.ENAME_OTHERNODE 
-            || node.Name == SqlStructureConstants.ENAME_BRACKET_QUOTED_NAME 
-            || node.TextValue?.ToLower() == "value"
-            || node.TextValue?.ToLower() == "text"
-            || node.TextValue?.ToLower() == "status"
-            || node.TextValue?.ToLower() == "str"
-            || node.TextValue?.ToLower() == "datetime"
-            || node.TextValue?.ToLower() == "date"
-            || node.TextValue?.ToLower() == "language";
+        return node.Name == SqlStructureConstants.ENAME_OTHERNODE
+            || node.Name == SqlStructureConstants.ENAME_BRACKET_QUOTED_NAME
+            || KeywordsAcceptableAsColumnNames.Contains(node.TextValue?.ToLower());
     }
 
     public static Node FollowingNonWsChild(this Node value, Node fromChild, bool allowComments = false)
