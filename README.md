@@ -8,8 +8,6 @@ It's using the unchanged parser and slightly changed formatter, as well as addin
 It is mostly intended for automating as much work as possible while migrating a project with a large amount of stored procedures and functions,
 but should work for any pieces of code containing supported statements.
 
-Still a work in progress
-
 The tool has been tested on a pretty old large project with over 800 stored procedures and functions, and the test is passing with no crashes. The correctness of all of the output has not been strictly verified though.
 
 ### What should work
