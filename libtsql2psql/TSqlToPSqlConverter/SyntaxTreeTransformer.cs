@@ -1420,7 +1420,7 @@ public class SyntaxTreeTransformer {
                 }
             }
 
-            if (columns.Count != compositeNameColumns.Count) {
+            if (columns.Count != compositeNameColumns.Count && compositeNameColumns.Count > 0) {
                 selectClause.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
             }
             
