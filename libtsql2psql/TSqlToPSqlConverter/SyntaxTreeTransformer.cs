@@ -215,6 +215,12 @@ public class SyntaxTreeTransformer {
 
     private void ForceDdlParens(Node element) {
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "procedure")) {
+            var existingDdlParens = element.Parent.ChildByName(SqlStructureConstants.ENAME_DDL_PARENS);
+            if (existingDdlParens != null)
+            {
+                return;
+            }
+
             var clauseNodes = element.Parent.Children.ToList();
             var schema = element.NextNonWsSibling();
             var period = schema.NextNonWsSibling();
