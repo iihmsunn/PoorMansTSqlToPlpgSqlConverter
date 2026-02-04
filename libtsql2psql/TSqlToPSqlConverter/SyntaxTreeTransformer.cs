@@ -1684,9 +1684,9 @@ public class SyntaxTreeTransformer {
             var deleteStatement = deleteClause.Parent;
             var fromClause = deleteClause.NextNonWsSibling();
             var selectionTarget = fromClause.ChildByName(SqlStructureConstants.ENAME_SELECTIONTARGET);
-            var tableName = selectionTarget.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            var tableName = selectionTarget.ChildrenByName(SqlStructureConstants.ENAME_OTHERNODE).FirstOrDefault();
             
-            if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
+            if (tableName == null || !arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
                 return;
             }
 
