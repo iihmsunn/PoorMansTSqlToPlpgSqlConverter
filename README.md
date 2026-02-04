@@ -63,6 +63,7 @@ When something is not supported, it will simply be left as is so you can finish 
   A workaround is to wrap such names in square brackets in the source code.
 * CLR types like geography and geometry are currently not supported.
 * Things that use very specific built-in stored procedures and system tables are not planned to be supported and they're used rarely enough to just port everything manually.
+* Assignment of 0/1 to boolean types is not currently converted to false/true
 
 ### Command line usage
 
