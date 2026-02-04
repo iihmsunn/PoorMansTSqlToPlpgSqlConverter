@@ -424,9 +424,22 @@ public class SyntaxTreeTransformer {
 
     private static string[] PSqlUnnecessaryKeywords = ["lineno", "nocount"];
 
+    private void RemoveBatchSeparators(Node element)
+    {
+        if (element.Name == SqlStructureConstants.ENAME_BATCH_SEPARATOR)
+        {
+            element.Parent.RemoveChild(element);
+        }
+        
+        foreach (var child in new List<Node>(element.Children))
+        {
+            RemoveBatchSeparators(child);
+        }
+    }
+
     private void RemoveUnnecessaryStatements(Node element)
     {
-        if (element.Name == SqlStructureConstants.ENAME_OTHERKEYWORD && PSqlUnnecessaryKeywords.Contains(element.TextValue))
+        if (element.Name == SqlStructureConstants.ENAME_OTHERKEYWORD && PSqlUnnecessaryKeywords.Contains(element.TextValue.ToLower()))
         {
             var statement = element.Parent.Parent;
             statement.Parent.RemoveChild(statement);
@@ -2762,5 +2775,6 @@ public class SyntaxTreeTransformer {
         ConvertDataTypes(sqlTreeDoc);
         ConvertIdentity(sqlTreeDoc);
         FixCommasAfterComments(sqlTreeDoc);
+        RemoveBatchSeparators(sqlTreeDoc);
     }
 }
