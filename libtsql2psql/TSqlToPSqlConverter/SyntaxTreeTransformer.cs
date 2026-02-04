@@ -794,7 +794,8 @@ public class SyntaxTreeTransformer {
 
         var tableName = intoClause.Children.First(e => e.IsName()).TextValue;
         statement.RemoveChild(intoClause);
-        var createTableClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", selectClause);
+        var firstClause = selectClause.Parent.Children.First();
+        var createTableClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", firstClause);
         createTableClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "create");
         createTableClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "temp");
         createTableClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "table");
