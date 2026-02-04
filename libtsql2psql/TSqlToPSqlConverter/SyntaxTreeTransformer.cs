@@ -1655,6 +1655,13 @@ public class SyntaxTreeTransformer {
                 return;
             }
 
+            var firstClause = element.Parent?.Parent?.Children.FirstOrDefault();
+            var deleteKeyword = firstClause?.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete");
+            if (deleteKeyword != null)
+            {
+                return;
+            }
+
             element.InsertChildBefore(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "unnest", tableName);
             var parens = element.InsertChildBefore(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", tableName);
             element.RemoveChild(tableName);
@@ -1663,6 +1670,71 @@ public class SyntaxTreeTransformer {
 
         foreach (var child in new List<Node>(element.Children)) {
             UnnestArrays(child, arrayVariables);
+        }
+    }
+
+    private void DeleteFromArrays(Node element, List<string>? arrayVariables)
+    {
+        if (arrayVariables == null) arrayVariables = [];
+
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete"))
+        {
+            var deleteClause = element.Parent;
+            var deleteStatement = deleteClause.Parent;
+            var fromClause = deleteClause.NextNonWsSibling();
+            var selectionTarget = fromClause.ChildByName(SqlStructureConstants.ENAME_SELECTIONTARGET);
+            var tableName = selectionTarget.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
+                return;
+            }
+
+            var whereClause = fromClause.NextNonWsSibling();
+
+            var assignStatement = deleteStatement.Parent.InsertChildBefore(SqlStructureConstants.ENAME_SQL_STATEMENT, "", deleteStatement);
+            var assignClause = assignStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            assignClause.AddChild((Node)tableName.Clone());
+            assignClause.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, ":=");
+            
+            if (whereClause == null)
+            {
+                assignClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "[]");
+                deleteStatement.Parent.RemoveChild(deleteStatement);
+                return;
+            }
+
+            var whereKeyword = whereClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "where")!;
+            var whereTail = whereClause.Children.Where(e => e != whereKeyword).ToList();
+            var notKeyword = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_OTHERKEYWORD, "not", whereKeyword);
+            var whereParens = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", notKeyword);
+            foreach (var node in whereTail)
+            {
+                node.Parent.RemoveChild(node);
+                whereParens.AddChild(node);
+            }
+
+            var semicolon = whereParens.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+            if (semicolon != null)
+            {
+                semicolon.Parent.RemoveChild(semicolon);
+            }
+
+            var newArrayParens = assignClause.AddChild(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "");
+            var arrayAggClause = newArrayParens.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "select");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "array_agg");
+            var arrayAggParens = arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+            arrayAggParens.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "_t");
+            
+            fromClause.Parent.RemoveChild(fromClause);
+            whereClause.Parent.RemoveChild(whereClause);
+            newArrayParens.AddChild(fromClause);
+            newArrayParens.AddChild(whereClause);
+
+            deleteStatement.Parent.RemoveChild(deleteStatement);
+        }
+
+        foreach (var child in new List<Node>(element.Children)) {
+            DeleteFromArrays(child, arrayVariables);
         }
     }
 
@@ -2799,6 +2871,7 @@ public class SyntaxTreeTransformer {
         ConvertPivot(sqlTreeDoc);
         ConvertUnpivot(sqlTreeDoc);
         ConvertDelete(sqlTreeDoc);
+        DeleteFromArrays(sqlTreeDoc, arrayVariables);
         var tempTableDefinitions = ConvertTempTables(sqlTreeDoc);
         ConvertLoops(sqlTreeDoc);
         ConvertUpdateFrom(sqlTreeDoc);
