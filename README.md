@@ -42,6 +42,7 @@ The tool has been tested on a pretty old large project with over 800 stored proc
  * Transactions are removed because exception handling has implicit rollbacks
  * Try/catch converted to begin/exception, raiserror and throw converted to "raise exception"
  * Since proper type inference is impossible, + for string concatenation and = for booleans are implemented with operator overloading
+ * Default values for boolean function arguments are converted to true/false.
  * Json functions: json_value, json_query, openjson, isjson, "for json path".
    "For json auto" will likely never really work and is instead handled as "for json path" with a warning comment.
  * Semicolons are added automatically
@@ -63,7 +64,6 @@ When something is not supported, it will simply be left as is so you can finish 
   A workaround is to wrap such names in square brackets in the source code.
 * CLR types like geography and geometry are currently not supported.
 * Things that use very specific built-in stored procedures and system tables are not planned to be supported and they're used rarely enough to just port everything manually.
-* Assignment of 0/1 to boolean types is not currently converted to false/true
 
 ### Command line usage
 
