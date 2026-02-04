@@ -61,6 +61,7 @@ public class SyntaxTreeTransformer {
         if (element.Name == SqlStructureConstants.ENAME_EXPRESSION_PARENS) return;
         if (element.Name == SqlStructureConstants.ENAME_FUNCTION_PARENS) return;
         if (element.Name == SqlStructureConstants.ENAME_SELECTIONTARGET_PARENS) return;
+        if (element.Name == SqlStructureConstants.ENAME_IN_PARENS) return;
 
         if (element.Name == SqlStructureConstants.ENAME_SQL_CLAUSE && element.Parent.Children.Last() == element)
         {
