@@ -140,6 +140,13 @@ as
 	insert into @t2
 	exec as_trace @str = 'asd'
 
+	delete
+	from @t2;
+
+	delete
+	from @t2
+	where a = 1;
+
 	select *
 	from @t2 t2;
 
