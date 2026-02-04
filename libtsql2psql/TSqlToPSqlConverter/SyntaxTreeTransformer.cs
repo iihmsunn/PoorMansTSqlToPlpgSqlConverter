@@ -2298,7 +2298,7 @@ public class SyntaxTreeTransformer {
                 // if inserting into table, fetch from refcursor using fetch_all_from function and table's column list
                 selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "fetch_all_from");
                 var parens1 = selectionTarget.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
-                parens1.AddChild(SqlStructureConstants.ENAME_STRING, $"{name.TextValue}_select1");
+                parens1.AddChild(SqlStructureConstants.ENAME_STRING, $"{name.TextValue.ToSnakeCase()}_select1");
                 selectionTarget.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "as");
                 var tableDefinitionClone = (Node)tableDefinition!.Clone();
                 tableDefinitionClone.Name = SqlStructureConstants.ENAME_EXPRESSION_PARENS;
@@ -2552,7 +2552,7 @@ public class SyntaxTreeTransformer {
             declareBlock.AddChild(SqlStructureConstants.ENAME_OTHERNODE, refcursorName);
             declareBlock.AddChild(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "refcursor");
             declareBlock.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, "");
-            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, $"{procedureName}_{refcursorName}");
+            declareBlock.AddChild(SqlStructureConstants.ENAME_STRING, $"{procedureName.ToSnakeCase()}_{refcursorName}");
         }
     
         foreach (var child in new List<Node>(element.Children))
