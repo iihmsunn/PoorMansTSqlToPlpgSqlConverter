@@ -2336,6 +2336,12 @@ public class SyntaxTreeTransformer {
                 parens.RemoveChild(semicolon);
             }
 
+            var outputKeywords = parens.Children.Where(e => e.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "output")).ToList();
+            foreach (var node in outputKeywords)
+            {
+                node.Parent.RemoveChild(node);
+            }
+
             var execStatement = clause.Parent;
             var insertClause = execStatement.Children.FirstOrDefault(c => c.ChildByName(SqlStructureConstants.ENAME_COMPOUNDKEYWORD) != null);
             if (insertClause == null) return;
