@@ -1865,25 +1865,43 @@ public class SyntaxTreeTransformer {
         {
             var column = ExpandNodeToListSection(element);
             var clause = element.Parent;
-            var within = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "within"));
-            if (within == null) return;
-
-            var group = within.NextNonWsSibling();
-            var withinParens = group.NextNonWsSibling();
-
-            clause.RemoveChild(within);
-            clause.RemoveChild(group);
-            clause.RemoveChild(withinParens);
-
             var stringAggParens = element.NextNonWsSibling();
-            foreach (var _clause in withinParens.Children)
-            {
-                foreach (var node in new List<Node>(_clause.Children))
+
+            //convert within part
+            var within = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "within"));
+            if (within != null) {
+                var group = within.NextNonWsSibling();
+                var withinParens = group.NextNonWsSibling();
+
+                clause.RemoveChild(within);
+                clause.RemoveChild(group);
+                clause.RemoveChild(withinParens);
+
+                
+                foreach (var _clause in withinParens.Children)
                 {
-                    node.Parent.RemoveChild(node);
-                    stringAggParens.AddChild(node);
+                    foreach (var node in new List<Node>(_clause.Children))
+                    {
+                        node.Parent.RemoveChild(node);
+                        stringAggParens.AddChild(node);
+                    }
                 }
             }
+
+            //wrap string_agg text in parens and cast to text just in case
+            var stringAggComma = stringAggParens.ChildByName(SqlStructureConstants.ENAME_COMMA);
+            var stringAggChildren = stringAggParens.Children.ToList();
+            var stringAggCommaIndex = stringAggChildren.IndexOf(stringAggComma);
+            var stringAggExpression = stringAggChildren.Take(stringAggCommaIndex);
+            var stringAggExpressionParens = stringAggParens.InsertChildBefore(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", stringAggComma);
+            foreach (var node in stringAggExpression)
+            {
+                stringAggParens.RemoveChild(node);
+                stringAggExpressionParens.AddChild(node);
+            }
+
+            var cast = stringAggParens.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", stringAggExpressionParens);
+            stringAggParens.InsertChildAfter(SqlStructureConstants.ENAME_OTHERNODE, "text", cast);
         }
 
         foreach (var child in new List<Node>(element.Children))
