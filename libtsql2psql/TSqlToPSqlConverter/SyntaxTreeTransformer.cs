@@ -1867,27 +1867,6 @@ public class SyntaxTreeTransformer {
             var clause = element.Parent;
             var stringAggParens = element.NextNonWsSibling();
 
-            //convert within part
-            var within = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "within"));
-            if (within != null) {
-                var group = within.NextNonWsSibling();
-                var withinParens = group.NextNonWsSibling();
-
-                clause.RemoveChild(within);
-                clause.RemoveChild(group);
-                clause.RemoveChild(withinParens);
-
-                
-                foreach (var _clause in withinParens.Children)
-                {
-                    foreach (var node in new List<Node>(_clause.Children))
-                    {
-                        node.Parent.RemoveChild(node);
-                        stringAggParens.AddChild(node);
-                    }
-                }
-            }
-
             //wrap string_agg text in parens and cast to text just in case
             var stringAggComma = stringAggParens.ChildByName(SqlStructureConstants.ENAME_COMMA);
             var stringAggChildren = stringAggParens.Children.ToList();
@@ -1902,6 +1881,26 @@ public class SyntaxTreeTransformer {
 
             var cast = stringAggParens.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", stringAggExpressionParens);
             stringAggParens.InsertChildAfter(SqlStructureConstants.ENAME_OTHERNODE, "text", cast);
+
+            //convert within part
+            var within = column.FirstOrDefault(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "within"));
+            if (within != null) {
+                var group = within.NextNonWsSibling();
+                var withinParens = group.NextNonWsSibling();
+
+                clause.RemoveChild(within);
+                clause.RemoveChild(group);
+                clause.RemoveChild(withinParens);
+                
+                foreach (var _clause in withinParens.Children)
+                {
+                    foreach (var node in new List<Node>(_clause.Children))
+                    {
+                        node.Parent.RemoveChild(node);
+                        stringAggParens.AddChild(node);
+                    }
+                }
+            }
         }
 
         foreach (var child in new List<Node>(element.Children))
