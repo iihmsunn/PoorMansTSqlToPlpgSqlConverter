@@ -2696,9 +2696,9 @@ public class SyntaxTreeTransformer {
         ConvertNStrings(sqlTreeDoc);
         ForceDdlAsBlock(sqlTreeDoc);
         ConvertProceduralBlocks(sqlTreeDoc);
-        AddLanguageClause(sqlTreeDoc);
         ForceDdlParens(sqlTreeDoc);
         ForceDdlBeginEnd(sqlTreeDoc);
+        AddLanguageClause(sqlTreeDoc);
         ForceInsertInto(sqlTreeDoc);
         AddBlockWrapper(sqlTreeDoc);
         FixBetweenKeyword(sqlTreeDoc);
