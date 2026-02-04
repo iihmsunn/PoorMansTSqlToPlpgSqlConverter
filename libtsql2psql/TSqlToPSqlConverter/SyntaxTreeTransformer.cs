@@ -2704,6 +2704,36 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    private void ConvertBooleanArgumentDefaults(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_DATATYPE_KEYWORD, "bit"))
+        {
+            if (!element.Parent.Matches(SqlStructureConstants.ENAME_DDL_PARENS))
+            {
+                return;
+            }
+
+            var equalsSign = element.NextNonWsSibling();
+            if (equalsSign == null || !equalsSign.Matches(SqlStructureConstants.ENAME_EQUALSSIGN))
+            {
+                return;
+            }
+
+            var number = equalsSign.NextNonWsSibling();
+            if (number == null || !number.Matches(SqlStructureConstants.ENAME_NUMBER_VALUE))
+            {
+                return;
+            }
+
+            if (number.TextValue == "0") number.TextValue = "false";
+            if (number.TextValue == "1") number.TextValue = "true";
+        }
+
+        foreach (var child in element.Children) {
+            ConvertBooleanArgumentDefaults(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertNStrings(sqlTreeDoc);
@@ -2772,6 +2802,7 @@ public class SyntaxTreeTransformer {
         ConvertCast(sqlTreeDoc);
         ConvertTryCast(sqlTreeDoc);
         UpdateNames(sqlTreeDoc);
+        ConvertBooleanArgumentDefaults(sqlTreeDoc);
         ConvertDataTypes(sqlTreeDoc);
         ConvertIdentity(sqlTreeDoc);
         FixCommasAfterComments(sqlTreeDoc);
