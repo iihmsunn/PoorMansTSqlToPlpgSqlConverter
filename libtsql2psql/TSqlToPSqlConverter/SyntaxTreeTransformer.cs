@@ -453,9 +453,10 @@ public class SyntaxTreeTransformer {
         }
 
         //sometimes it's necessary for mssql to have statements containing nothing but semicolon, those are removed
-        if (element.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE) && element.Parent.Children.Count() == 1 && element.Children.First().Matches(SqlStructureConstants.ENAME_SEMICOLON)) {
-            var statement = element.Parent;
-            statement.Parent.RemoveChild(statement);
+        if (element.Matches(SqlStructureConstants.ENAME_SQL_CLAUSE) 
+            && element.Parent.Children.Count(e => !e.IsComment() && e.Name != SqlStructureConstants.ENAME_WHITESPACE) == 1 
+            && (element.Children.FirstOrDefault()?.Matches(SqlStructureConstants.ENAME_SEMICOLON) ?? false)) {
+            element.Parent.RemoveChild(element);
         }
 
         foreach (var child in new List<Node>(element.Children))
@@ -794,7 +795,7 @@ public class SyntaxTreeTransformer {
 
         var tableName = intoClause.Children.First(e => e.IsName()).TextValue;
         statement.RemoveChild(intoClause);
-        var firstClause = selectClause.Parent.Children.First();
+        var firstClause = selectClause.Parent.Children.First(e => e.Name == SqlStructureConstants.ENAME_SQL_CLAUSE);
         var createTableClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", firstClause);
         createTableClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "create");
         createTableClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "temp");
@@ -1655,7 +1656,7 @@ public class SyntaxTreeTransformer {
                 return;
             }
 
-            var firstClause = element.Parent?.Parent?.Children.FirstOrDefault();
+            var firstClause = element.Parent?.Parent?.Children.FirstOrDefault(e => e.Name == SqlStructureConstants.ENAME_SQL_CLAUSE);
             var deleteKeyword = firstClause?.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "delete");
             if (deleteKeyword != null)
             {
@@ -1684,6 +1685,7 @@ public class SyntaxTreeTransformer {
             var fromClause = deleteClause.NextNonWsSibling();
             var selectionTarget = fromClause.ChildByName(SqlStructureConstants.ENAME_SELECTIONTARGET);
             var tableName = selectionTarget.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            
             if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
                 return;
             }
@@ -1697,7 +1699,7 @@ public class SyntaxTreeTransformer {
             
             if (whereClause == null)
             {
-                assignClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "[]");
+                assignClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "array[]");
                 deleteStatement.Parent.RemoveChild(deleteStatement);
                 return;
             }
@@ -2326,6 +2328,12 @@ public class SyntaxTreeTransformer {
             foreach (var node in arguments) {
                 clause.RemoveChild(node);
                 parens.AddChild(node);
+            }
+
+            var semicolon = parens.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+            if (semicolon != null)
+            {
+                parens.RemoveChild(semicolon);
             }
 
             var execStatement = clause.Parent;
