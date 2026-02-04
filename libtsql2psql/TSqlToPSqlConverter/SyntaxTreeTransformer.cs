@@ -2028,34 +2028,37 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "datediff")) {
             element.TextValue = "extract";
             var parens = element.NextNonWsSibling();
-            var datePart = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
-            var comma = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
+            var nodes = parens.Children.ToList();
+            //var datePart = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
+            var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
+            var comma1 = commas[0];
+            var comma1Index = nodes.IndexOf(comma1);
 
-            comma.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
-            comma.TextValue = "from";
+            comma1.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
+            comma1.TextValue = "from";
 
-            var comma2 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
+            var comma2 = commas[1];
+            var comma2Index = nodes.IndexOf(comma2);
             comma2.Name = SqlStructureConstants.ENAME_OTHEROPERATOR;
             comma2.TextValue = "-";
 
-            var date1 = comma.NextNonWsSibling();
-            var date1Details = date1.NextNonWsSibling();
-            var date2 = comma2.NextNonWsSibling();
-            var date2Details = date2.NextNonWsSibling();
+            var date1 = nodes.Skip(comma1Index + 1).Take(comma2Index - comma1Index).ToList();
+            var date2 = nodes.Skip(comma2Index + 1).ToList();
 
-            parens.RemoveChild(date1);
-            parens.RemoveChild(date2);
-            parens.InsertChildBefore(date2, comma2);
-            parens.InsertChildAfter(date1, comma2);
-
-            if (date1Details != null && date1Details.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)) {
-                parens.RemoveChild(date1Details);
-                parens.InsertChildAfter(date1Details, date1);
+            Node? temp = comma1;
+            foreach (var node in date1)
+            {
+                parens.RemoveChild(node);
+                parens.InsertChildAfter(node, temp);
+                temp = node;
             }
 
-            if (date2Details != null && date2Details.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)) {
-                parens.RemoveChild(date2Details);
-                parens.InsertChildAfter(date2Details, date2);
+            temp = comma2;
+            foreach (var node in date2)
+            {
+                parens.RemoveChild(node);
+                parens.InsertChildAfter(node, temp);
+                temp = node;
             }
         }
 
