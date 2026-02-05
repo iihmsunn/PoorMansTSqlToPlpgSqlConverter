@@ -2960,6 +2960,7 @@ public class SyntaxTreeTransformer {
         ConvertDateAddFunction(sqlTreeDoc);
         ConvertDateDiffFunction(sqlTreeDoc);
         ConvertIifFunction(sqlTreeDoc);
+        ConvertCharIndex(sqlTreeDoc);
         ConvertStuffFunction(sqlTreeDoc);
         ConvertProcedureCalls(sqlTreeDoc, tempTableDefinitions, declarations);
         InsertIntoArrays(sqlTreeDoc, arrayVariables);
@@ -2969,7 +2970,6 @@ public class SyntaxTreeTransformer {
         ConvertJsonFunctions(sqlTreeDoc);
         ConvertForJsonPath(sqlTreeDoc);
         ConvertOutputClause(sqlTreeDoc);
-        ConvertCharIndex(sqlTreeDoc);
 
         FixDdlOtherBlockSemicolon(sqlTreeDoc);
         AddMissingSemicolons(sqlTreeDoc);
