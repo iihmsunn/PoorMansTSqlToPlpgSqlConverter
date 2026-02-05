@@ -2848,6 +2848,22 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    public void ConvertCharIndex(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "charindex"))
+        {
+            element.TextValue = "position";
+            var parens = element.NextNonWsSibling();
+            var comma = parens.ChildByName(SqlStructureConstants.ENAME_COMMA);
+            comma.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
+            comma.TextValue = "in";
+        }
+
+        foreach (var child in element.Children) {
+            ConvertCharIndex(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertNStrings(sqlTreeDoc);
@@ -2911,6 +2927,7 @@ public class SyntaxTreeTransformer {
         ConvertJsonFunctions(sqlTreeDoc);
         ConvertForJsonPath(sqlTreeDoc);
         ConvertOutputClause(sqlTreeDoc);
+        ConvertCharIndex(sqlTreeDoc);
 
         FixDdlOtherBlockSemicolon(sqlTreeDoc);
         AddMissingSemicolons(sqlTreeDoc);

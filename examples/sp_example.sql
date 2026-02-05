@@ -9,6 +9,8 @@ alter procedure [dbo].[sp_request_test] (
 	@test1 nvarchar(max) output
 )
 as
+	select charindex('a', 'abc') as test;
+
 	create table #temp (name nvarchar(max), value int);
 	insert into #temp (name, value) values ('test1', 1), ('test2', 2), ('test3', 3);
 
