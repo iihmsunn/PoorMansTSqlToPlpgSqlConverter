@@ -2852,14 +2852,56 @@ public class SyntaxTreeTransformer {
     {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "charindex"))
         {
+            var clause = element.Parent;
             element.TextValue = "position";
             var parens = element.NextNonWsSibling();
-            var comma = parens.ChildByName(SqlStructureConstants.ENAME_COMMA);
+            var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
+
+            var comma = commas[0];
             comma.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
             comma.TextValue = "in";
+
+            if (commas.Count == 1)
+            {
+                return;
+            }
+
+            var comma2 = commas[1];
+            var nodes = parens.Children.ToList();
+            var comma1Index = nodes.IndexOf(comma);
+            var comma2Index = nodes.IndexOf(comma2);
+            var str = nodes.Skip(comma1Index + 1).Take(comma2Index - comma1Index - 1).ToList();
+            var tail = nodes.Skip(comma2Index + 1).ToList();
+            comma2.Parent.RemoveChild(comma2);
+
+            var substringFunction = parens.InsertChildAfter(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "substring", comma);
+            var substringParens = parens.InsertChildAfter(SqlStructureConstants.ENAME_FUNCTION_PARENS, "", substringFunction);
+            foreach (var node in str)
+            {
+                parens.RemoveChild(node);
+                substringParens.AddChild(node);
+            }
+            substringParens.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
+            foreach (var node in tail)
+            {
+                substringParens.AddChild((Node)node.Clone());
+            }
+            substringParens.AddChild(SqlStructureConstants.ENAME_OTHEROPERATOR, "+");
+            substringParens.AddChild(SqlStructureConstants.ENAME_NUMBER_VALUE, "1");
+
+            var plus = clause.InsertChildAfter(SqlStructureConstants.ENAME_OTHEROPERATOR, "+", parens);
+            var temp = plus;
+            foreach (var node in tail)
+            {
+                var clone = (Node)node.Clone();
+                clause.InsertChildAfter(clone, temp);
+                temp = clone;
+
+                node.Parent.RemoveChild(node);
+            }
         }
 
-        foreach (var child in element.Children) {
+        foreach (var child in element.Children.ToList()) {
             ConvertCharIndex(child);
         }
     }
