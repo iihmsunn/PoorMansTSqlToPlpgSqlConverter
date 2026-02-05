@@ -2629,9 +2629,13 @@ public class SyntaxTreeTransformer {
             }
 
             //has to be the first clause
-            if (statement.ChildByNameAndText(SqlStructureConstants.ENAME_SQL_CLAUSE) != selectClause) {
+            var prevClause = selectClause.PreviousNonWsSibling();
+            var prevClauseIsCte = prevClause?.ChildByName(SqlStructureConstants.ENAME_CTE_WITH_CLAUSE) != null;
+            if (prevClause != null && !prevClauseIsCte) {
                 return;
             }
+
+            var firstClause = prevClause ?? selectClause;
 
             //must not have into clause
             if (statement.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "into") != null) != null) {
@@ -2653,7 +2657,7 @@ public class SyntaxTreeTransformer {
 
             selectNumber = selectNumber + 1;
             var refcursorName = $"_select{selectNumber}";
-            var openRefcursorClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", selectClause);
+            var openRefcursorClause = statement.InsertChildBefore(SqlStructureConstants.ENAME_SQL_CLAUSE, "", firstClause);
             openRefcursorClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "open");
             openRefcursorClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, refcursorName);
             openRefcursorClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "for");
