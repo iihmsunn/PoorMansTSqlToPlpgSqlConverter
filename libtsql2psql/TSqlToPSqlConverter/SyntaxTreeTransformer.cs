@@ -2167,24 +2167,34 @@ public class SyntaxTreeTransformer {
             var clause = element.Parent;
             var parens = element.NextNonWsSibling();
             var part = parens.Children.First(e => e.Name == SqlStructureConstants.ENAME_OTHERNODE || e.Name == SqlStructureConstants.ENAME_FUNCTION_KEYWORD)!;
-            var comma1 = parens.ChildByNameAndText(SqlStructureConstants.ENAME_COMMA)!;
-            var mod = comma1.NextNonWsSibling();
-            var comma2 = mod.NextNonWsSibling();
-            var date = comma2.NextNonWsSibling();
-            var dateDetails = date.NextNonWsSibling();
+            var nodes = parens.Children.ToList();
+            var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
+            var comma1 = commas[0];
+            var comma2 = commas[1];
+            var comma1Index = nodes.IndexOf(comma1);
+            var comma2Index = nodes.IndexOf(comma2);
 
-            parens.RemoveChild(date);
+            var mod = nodes.Skip(comma1Index + 1).Take(comma2Index - comma1Index - 1).ToList();
+            var date = nodes.Skip(comma2Index + 1).ToList();
+            
             var newParens = clause.InsertChildBefore(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", element);
-            newParens.AddChild(date);
-            if (dateDetails != null && dateDetails.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS))
+            foreach (var node in date)
             {
-                parens.RemoveChild(dateDetails);
-                newParens.AddChild(dateDetails);
+                parens.RemoveChild(node);
+                newParens.AddChild(node);
             }
 
             newParens.AddChild(SqlStructureConstants.ENAME_OTHEROPERATOR, "+");
+            
+            foreach (var node in mod)
+            {
+                parens.RemoveChild(node);
+                newParens.AddChild(node);
+            }
+            
+            newParens.AddChild(SqlStructureConstants.ENAME_OTHEROPERATOR, "*");
             newParens.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "interval");
-            newParens.AddChild(SqlStructureConstants.ENAME_STRING, $"{mod.TextValue} {part.TextValue}");
+            newParens.AddChild(SqlStructureConstants.ENAME_STRING, $"1 {part.TextValue}");
 
             clause.RemoveChild(element);
             clause.RemoveChild(parens);
