@@ -1814,6 +1814,12 @@ public class SyntaxTreeTransformer {
                     node.Parent.RemoveChild(node);
                     selectWrapper.AddChild(node);
                 }
+
+                var semicolon = tail.Last().FindSemicolon();
+                if (semicolon != null)
+                {
+                    semicolon.Parent.RemoveChild(semicolon);
+                }
             }
 
             var updatedTail = insertStatement.Children.Skip(insertClauseIndex + 1).ToList();

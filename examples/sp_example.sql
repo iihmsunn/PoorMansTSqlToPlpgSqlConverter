@@ -142,7 +142,7 @@ as
 	with test as (
 		select 1 a, 2 b
 	)
-	insert into @t2 (a, b) select * from test
+	insert into @t2 (a, b) select * from test;
 
 	insert into @t2
 	exec as_trace @str = 'asd'
@@ -186,6 +186,9 @@ as
 	)
 		
 	IF OBJECT_ID (N'tempdb..#test1', N'U') IS not NULL drop table #test1
+
+	drop table if exists #dttest
+	create table #dttest (a int)
 
 	select 1 as a, 2 as b
 	into #test2
