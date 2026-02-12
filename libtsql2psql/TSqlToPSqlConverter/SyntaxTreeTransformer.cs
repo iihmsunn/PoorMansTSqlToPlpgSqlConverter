@@ -920,7 +920,7 @@ public class SyntaxTreeTransformer {
             clause.AddChild(opener);
             clause.AddChild(booleanExpression);
 
-            var body = ifStatementInternal.ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT);
+            var body = ifStatementInternal.ChildByNameAndText(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT)!;
             var nextStatement = body.ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT);
 
             if (nextStatement != null)
