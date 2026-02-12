@@ -16,6 +16,10 @@ as
 	create table #temp (name nvarchar(max), value int);
 	insert into #temp (name, value) values ('test1', 1), ('test2', 2), ('test3', 3);
 
+	select *
+	from a
+	cross apply split(a.t) b
+
 	SELECT test1, test2, test3
 	from #temp t
 	PIVOT (

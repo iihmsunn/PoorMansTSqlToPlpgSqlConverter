@@ -3077,6 +3077,27 @@ public class SyntaxTreeTransformer {
         }
     }
 
+    public void ConvertCrossApply(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "apply"))
+        {
+            var previousKw = element.PreviousNonWsSibling();
+            if (!previousKw.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "cross"))
+            {
+                return;
+            }
+
+            element.TextValue = "join";
+
+            element.Parent.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "lateral");
+            element.Parent.Attributes["simpleText"] = "cross join lateral";
+        }
+
+        foreach (var child in element.Children.ToList()) {
+            ConvertCrossApply(child);
+        }
+    }
+
     public void TransformTree(Node sqlTreeDoc)
     {
         ConvertNStrings(sqlTreeDoc);
@@ -3143,6 +3164,7 @@ public class SyntaxTreeTransformer {
         ConvertJsonFunctions(sqlTreeDoc);
         ConvertForJsonPath(sqlTreeDoc);
         ConvertOutputClause(sqlTreeDoc);
+        ConvertCrossApply(sqlTreeDoc);
 
         FixDdlOtherBlockSemicolon(sqlTreeDoc);
         AddMissingSemicolons(sqlTreeDoc);
