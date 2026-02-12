@@ -592,15 +592,10 @@ public class SyntaxTreeTransformer {
     /// <param name="element"></param>
     private void ForceMergeInto(Node element)
     {
-        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "merge"))
+        if (element.Matches(SqlStructureConstants.ENAME_MERGE_CLAUSE))
         {
-            var clause = element.Parent;
-            var compoundKeyword = clause.InsertChildAfter(SqlStructureConstants.ENAME_COMPOUNDKEYWORD, "", element);
-            compoundKeyword.Attributes["simpleText"] = "insert into";
-
-            element.Parent.RemoveChild(element);
-            compoundKeyword.AddChild(element);
-            compoundKeyword.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+            var opener = element.ChildByName(SqlStructureConstants.ENAME_CONTAINER_OPEN);
+            opener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
         }
 
         foreach (var child in new List<Node>(element.Children))
@@ -2981,6 +2976,7 @@ public class SyntaxTreeTransformer {
         ForceDdlBeginEnd(sqlTreeDoc);
         AddLanguageClause(sqlTreeDoc);
         ForceInsertInto(sqlTreeDoc);
+        ForceMergeInto(sqlTreeDoc);
         AddBlockWrapper(sqlTreeDoc);
         FixBetweenKeyword(sqlTreeDoc);
 
