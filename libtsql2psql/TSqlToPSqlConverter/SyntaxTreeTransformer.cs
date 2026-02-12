@@ -16,7 +16,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System.ComponentModel;
 using System.Data;
 using PoorMansTSqlFormatterLib.Interfaces;
 using PoorMansTSqlFormatterLib.ParseStructure;
@@ -44,6 +43,11 @@ public class SyntaxTreeTransformer {
 
     private Dictionary<string, string> DateMapping = new Dictionary<string, string> {
         { "mm", "MI" }
+    };
+
+    private Dictionary<string, string> IntervalMapping = new Dictionary<string, string>
+    {
+        { "dw", "dow" }
     };
 
     private Dictionary<string, string> DataTypeMapping = new Dictionary<string, string> {
@@ -2327,7 +2331,14 @@ public class SyntaxTreeTransformer {
             
             newParens.AddChild(SqlStructureConstants.ENAME_OTHEROPERATOR, "*");
             newParens.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "interval");
-            newParens.AddChild(SqlStructureConstants.ENAME_STRING, $"1 {part.TextValue}");
+
+            var interval = part.TextValue;
+            if (IntervalMapping.ContainsKey(interval))
+            {
+                interval = IntervalMapping[interval];
+            }
+
+            newParens.AddChild(SqlStructureConstants.ENAME_STRING, $"1 {interval}");
 
             clause.RemoveChild(element);
             clause.RemoveChild(parens);
