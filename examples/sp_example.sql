@@ -59,6 +59,8 @@ as
 	select string_agg(field1, ',') within group (order by field1) as test
 	from #test1
 
+	select cast('[' + '123' + ']' as nvarchar(max)) as castTest1
+	select json_query('[' + '123' + ']') as jsonTest1;
 
 	select cast(string_agg(field1, ',') within group (order by field1) as nvarchar(max)) as test
 	from #test1

@@ -1125,17 +1125,18 @@ public class SyntaxTreeTransformer {
             var typeParens = parens.ChildByName(SqlStructureConstants.ENAME_DDLDETAIL_PARENS);
             var value = parens.Children.Take(asIndex).ToList();
             var clause = element.Parent;
+            var valueParens = clause.InsertChildBefore(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "", element);
 
             foreach (var node in value)
             {
                 parens.RemoveChild(node);
-                clause.InsertChildBefore(node, element);
+                valueParens.AddChild(node);
             }
             
             clause.RemoveChild(element);
             clause.RemoveChild(parens);
 
-            var temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", value.Last());
+            var temp = clause.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", valueParens);
             clause.InsertChildAfter(type, temp);
             if (typeParens != null)
             {
