@@ -1681,7 +1681,7 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private List<string> ConvertTableVariables(Node element, List<string>? arrayVariables = null) {
+    private List<(string name, string type)> ConvertTableVariables(Node element, List<(string name, string type)>? arrayVariables = null) {
         if (arrayVariables == null) arrayVariables = [];
     
         //for input parameters - convert to array
@@ -1703,7 +1703,7 @@ public class SyntaxTreeTransformer {
                 element.RemoveChild(kw);
                 element.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "[]", typeName!);
 
-                arrayVariables.Add(variableName.TextValue);
+                arrayVariables.Add((variableName.TextValue, typeName!.TextValue));
             }
         }
 
@@ -1731,7 +1731,7 @@ public class SyntaxTreeTransformer {
         return arrayVariables;
     }
 
-    private void UnnestArrays(Node element, List<string>? arrayVariables) {
+    private void UnnestArrays(Node element, List<(string name, string type)>? arrayVariables) {
         if (element.Matches(SqlStructureConstants.ENAME_SELECTIONTARGET)) {
             if (element.Parent.Matches(SqlStructureConstants.ENAME_FUNCTION_PARENS)) {
                 return;
@@ -1739,7 +1739,7 @@ public class SyntaxTreeTransformer {
 
             var tableName = element.Children.First(e => e.IsName());
             var tableAlias = tableName.NextNonWsSibling();
-            if (!(arrayVariables?.Any(e => e.ToLower() == tableName.TextValue.ToLower()) ?? false)) {
+            if (!(arrayVariables?.Any(e => e.name.ToLower() == tableName.TextValue.ToLower()) ?? false)) {
                 return;
             }
 
@@ -1761,7 +1761,7 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void DeleteFromArrays(Node element, List<string>? arrayVariables)
+    private void DeleteFromArrays(Node element, List<(string name, string type)>? arrayVariables)
     {
         if (arrayVariables == null) arrayVariables = [];
 
@@ -1773,7 +1773,13 @@ public class SyntaxTreeTransformer {
             var selectionTarget = fromClause.ChildByName(SqlStructureConstants.ENAME_SELECTIONTARGET);
             var tableName = selectionTarget.ChildrenByName(SqlStructureConstants.ENAME_OTHERNODE).FirstOrDefault();
             
-            if (tableName == null || !arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
+            if (tableName == null) {
+                return;
+            }
+
+            var arrayVariable = arrayVariables.Find(e => e.name.ToLower() == tableName.TextValue.ToLower());
+            if (arrayVariable == default)
+            {
                 return;
             }
 
@@ -1787,6 +1793,9 @@ public class SyntaxTreeTransformer {
             if (whereClause == null)
             {
                 assignClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "array[]");
+                assignClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+                assignClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, arrayVariable.type);
+                assignClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "[]");
                 deleteStatement.Parent.RemoveChild(deleteStatement);
                 return;
             }
@@ -1813,6 +1822,11 @@ public class SyntaxTreeTransformer {
             arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "array_agg");
             var arrayAggParens = arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
             arrayAggParens.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "_t");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "text");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, arrayVariable.type);
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "[]");
             
             fromClause.Parent.RemoveChild(fromClause);
             whereClause.Parent.RemoveChild(whereClause);
@@ -1827,7 +1841,7 @@ public class SyntaxTreeTransformer {
         }
     }
 
-    private void InsertIntoArrays(Node element, List<string>? arrayVariables) {
+    private void InsertIntoArrays(Node element, List<(string name, string type)>? arrayVariables) {
         if (arrayVariables == null) arrayVariables = [];
         if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "insert")) {
             var insertClause = element.Parent.Parent;
@@ -1837,7 +1851,8 @@ public class SyntaxTreeTransformer {
             }
             
             var tableName = insertClause.Children.Last(e => e.IsName());
-            if (!arrayVariables.Any(e => e.ToLower() == tableName.TextValue.ToLower())) {
+            var arrayVariable = arrayVariables.Find(e => e.name.ToLower() == tableName.TextValue.ToLower());
+            if (arrayVariable == default) {
                 return;
             }
             
@@ -1895,6 +1910,11 @@ public class SyntaxTreeTransformer {
             arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "array_agg");
             var arrayAggParens = arrayAggClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
             arrayAggParens.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "_t");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "text");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "::");
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, arrayVariable.type);
+            arrayAggClause.AddChild(SqlStructureConstants.ENAME_PERIOD, "[]");
             
             foreach (var clause in updatedTail) {
                 clause.Parent.RemoveChild(clause);
@@ -3053,7 +3073,7 @@ public class SyntaxTreeTransformer {
         AddDeclareSection(sqlTreeDoc, declarations);
         var arrayVariables = declarations
                     .FindAll(e => e.variable.Any(e1 => e1.Matches(SqlStructureConstants.ENAME_PERIOD)))
-                    .Select(e => e.variable.First(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE)).TextValue)
+                    .Select(e => (e.variable.First(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE)).TextValue, e.variable.Last(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE)).TextValue))
                     .ToList();
 
         arrayVariables?.AddRange(ConvertTableVariables(sqlTreeDoc));
