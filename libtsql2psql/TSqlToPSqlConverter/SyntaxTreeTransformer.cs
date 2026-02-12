@@ -875,6 +875,61 @@ public class SyntaxTreeTransformer {
         return tableDefinitions;
     }
 
+    /// <summary>
+    /// parser produces a broken tree for "drop table if exists", this fixes it
+    /// </summary>
+    /// <param name="element"></param>
+    private void FixDropTableIfExists(Node element)
+    {
+        if (element.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "drop"))
+        {
+            var clause = element.Parent;
+            var tableKeyword = element.NextNonWsSibling();
+            if (!tableKeyword.Matches(SqlStructureConstants.ENAME_OTHERKEYWORD, "table"))
+            {
+                return;
+            }
+
+            var tableName = tableKeyword.NextNonWsSibling();
+            if (tableName != null)
+            {
+                return;
+            }
+
+            var statement = element.Parent.Parent;
+            var container = statement.Parent;
+            var ifStatementExternal = statement.NextNonWsSibling();
+            var ifClause = ifStatementExternal.ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE);
+            var ifStatementInternal = ifClause.ChildByName(SqlStructureConstants.ENAME_IF_STATEMENT);
+
+            if (ifStatementInternal == null)
+            {
+                return;
+            }
+
+            var opener = ifStatementInternal.ChildByName(SqlStructureConstants.ENAME_CONTAINER_OPEN);
+            var booleanExpression = ifStatementInternal.ChildByName(SqlStructureConstants.ENAME_BOOLEAN_EXPRESSION);
+
+            opener.Parent.RemoveChild(opener);
+            booleanExpression.Parent.RemoveChild(booleanExpression);
+
+            clause.AddChild(opener);
+            clause.AddChild(booleanExpression);
+
+            var body = ifStatementInternal.ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT);
+            var nextStatement = body.ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT);
+
+            nextStatement.Parent.RemoveChild(nextStatement);
+            container.InsertChildAfter(nextStatement, ifStatementExternal);
+            container.RemoveChild(ifStatementExternal);
+        }
+
+        foreach (var child in new List<Node>(element.Children))
+        {
+            FixDropTableIfExists(child);
+        }
+    }
+
     private void ConvertOldDropTableIfExists(Node element)
     {
         if (element.Matches(SqlStructureConstants.ENAME_IF_STATEMENT))
@@ -3009,6 +3064,7 @@ public class SyntaxTreeTransformer {
         CleanupDeclareStatements(sqlTreeDoc);
         
         ConvertOldDropTableIfExists(sqlTreeDoc);
+        FixDropTableIfExists(sqlTreeDoc);
         
         ForceIfBeginEnd(sqlTreeDoc);
         ConvertConditions(sqlTreeDoc);
