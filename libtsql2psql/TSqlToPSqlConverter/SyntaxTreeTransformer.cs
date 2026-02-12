@@ -2255,7 +2255,7 @@ public class SyntaxTreeTransformer {
             element.TextValue = "extract";
             var parens = element.NextNonWsSibling();
 
-            var interval = parens.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            var interval = parens.ChildrenByName(SqlStructureConstants.ENAME_OTHERNODE).First();
             if (DateMapping.ContainsKey(interval.TextValue.ToLower()))
             {
                 interval.TextValue = DateMapping[interval.TextValue.ToLower()];
