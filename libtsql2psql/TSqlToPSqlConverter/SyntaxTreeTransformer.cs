@@ -1048,7 +1048,7 @@ public class SyntaxTreeTransformer {
                 clause.AddChild((Node)tableParens.Clone());
 
                 var returnStatement = functionBody.Children.First(s => s.Children.FirstOrDefault(c => c.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return") != null) != null);
-                var returnClause = returnStatement.Children.First();
+                var returnClause = returnStatement.ChildByName(SqlStructureConstants.ENAME_SQL_CLAUSE);
                 var returnKeyword = returnClause.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "return");
                 var varName = returnKeyword!.NextNonWsSibling();
                 if (varName != null) {

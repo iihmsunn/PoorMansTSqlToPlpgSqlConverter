@@ -7,6 +7,7 @@ returns @result table(id int) as begin
 
     insert into @result (id) values (@_id);
 
+    --test
     return;
 end
 
