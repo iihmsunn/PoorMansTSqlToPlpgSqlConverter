@@ -592,10 +592,15 @@ public class SyntaxTreeTransformer {
     /// <param name="element"></param>
     private void ForceMergeInto(Node element)
     {
-        if (element.Matches(SqlStructureConstants.ENAME_MERGE_CLAUSE))
+        if (element.Matches(SqlStructureConstants.ENAME_MERGE_TARGET))
         {
-            var opener = element.ChildByName(SqlStructureConstants.ENAME_CONTAINER_OPEN);
-            opener.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+            var intoKeyword = element.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+            if (intoKeyword != null)
+            {
+                return;
+            }
+
+            element.InsertChildBefore(SqlStructureConstants.ENAME_OTHERKEYWORD, "into", element.Children.First());
         }
 
         foreach (var child in new List<Node>(element.Children))
