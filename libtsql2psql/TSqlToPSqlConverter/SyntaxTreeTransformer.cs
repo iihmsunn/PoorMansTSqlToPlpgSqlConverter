@@ -1135,7 +1135,8 @@ public class SyntaxTreeTransformer {
                 temp = whereClause.InsertChildAfter(SqlStructureConstants.ENAME_AND_OPERATOR, "", temp);
                 temp.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "and");
             } else {
-                whereClause = updateStatement.InsertChildAfter(SqlStructureConstants.ENAME_SQL_CLAUSE, "", fromClause);
+                var lastJoinClause = updateStatement.Children.LastOrDefault(e => e.ChildByName(SqlStructureConstants.ENAME_COMPOUNDKEYWORD) != null);
+                whereClause = updateStatement.InsertChildAfter(SqlStructureConstants.ENAME_SQL_CLAUSE, "", lastJoinClause ?? fromClause);
                 temp = whereClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "where"); 
             }
             

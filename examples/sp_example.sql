@@ -163,6 +163,7 @@ as
 	set a = 1
 	from #temp1 t1
 	join #temp2 t2 on t1.id = t2.id
+	join #temp2 t3 on t2.id = t3.id
 	where t1.id = 1 and (t2.type_id = 1 or t2.id = 2);
 
 	declare @a nvarchar(max) = (select 'qwerty' as a) --comment1
