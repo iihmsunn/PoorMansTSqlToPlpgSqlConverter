@@ -71,9 +71,9 @@ as
 			test = '123',
 			[a.b] = 1,
 			[a.c] = 2,
-			test2 = 66,
-			[a.d.e] = 3,
-			test3 = 13
+			66 as test2,
+			test3 = 13,
+			[a.d.e] = 3
 		for json auto, without_array_wrapper
 	) as j
 	

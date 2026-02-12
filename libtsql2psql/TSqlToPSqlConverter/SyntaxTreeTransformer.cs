@@ -1423,7 +1423,10 @@ public class SyntaxTreeTransformer {
                 }
             }
 
-            if (columns.Count != compositeNameColumns.Count && compositeNameColumns.Count > 0) {
+
+            if (columns.Count != compositeNameColumns.Count 
+                && compositeNameColumns.Count > 0 
+                && selectClause.Children.Last().Name != SqlStructureConstants.ENAME_COMMA) {
                 selectClause.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
             }
             
