@@ -125,9 +125,9 @@ as
 
 	select format(getdate(), 'HH:mm dd.MM.yyyy') a, format(1.2, '00.##') b
 
-	select datepart(hour, getdate()) as test
+	select datepart(dw, getdate()) as test
 
-	select datediff(hour, getdate(), dateadd(hour, 1, getdate())) as test
+	select datediff(dw, getdate(), dateadd(hour, 1, getdate())) as test
 
 	select iif(1 = 1, 2, 3) as test
 	

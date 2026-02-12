@@ -41,11 +41,11 @@ public class SyntaxTreeTransformer {
         { "scope_identity", "lastval" }
     };
 
-    private Dictionary<string, string> DateMapping = new Dictionary<string, string> {
+    private Dictionary<string, string> DateFormatMapping = new Dictionary<string, string> {
         { "mm", "MI" }
     };
 
-    private Dictionary<string, string> IntervalMapping = new Dictionary<string, string>
+    private Dictionary<string, string> DateMapping = new Dictionary<string, string>
     {
         { "dw", "dow" }
     };
@@ -1991,7 +1991,7 @@ public class SyntaxTreeTransformer {
             if (isNumber) {
                 formatString.TextValue = "FM" + formatString.TextValue.Replace("#", "9").Replace(".", "D");
             } else {
-                foreach (var entry in DateMapping) {
+                foreach (var entry in DateFormatMapping) {
                     formatString.TextValue = formatString.TextValue.Replace(entry.Key, entry.Value);
                 }
             }
@@ -2240,6 +2240,13 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "datediff")) {
             element.TextValue = "extract";
             var parens = element.NextNonWsSibling();
+
+            var interval = parens.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            if (DateMapping.ContainsKey(interval.TextValue.ToLower()))
+            {
+                interval.TextValue = DateMapping[interval.TextValue.ToLower()];
+            }
+
             var nodes = parens.Children.ToList();
             //var datePart = parens.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERNODE);
             var commas = parens.ChildrenByName(SqlStructureConstants.ENAME_COMMA).ToList();
@@ -2286,6 +2293,11 @@ public class SyntaxTreeTransformer {
         if (element.Matches(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "datepart")) {
             element.TextValue = "extract";
             var parens = element.NextNonWsSibling();
+            var interval = parens.ChildByName(SqlStructureConstants.ENAME_OTHERNODE);
+            if (DateMapping.ContainsKey(interval.TextValue.ToLower()))
+            {
+                interval.TextValue = DateMapping[interval.TextValue.ToLower()];
+            }
             var comma = parens.ChildByName(SqlStructureConstants.ENAME_COMMA);
             comma.Name = SqlStructureConstants.ENAME_OTHERKEYWORD;
             comma.TextValue = "from";
@@ -2333,9 +2345,9 @@ public class SyntaxTreeTransformer {
             newParens.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "interval");
 
             var interval = part.TextValue;
-            if (IntervalMapping.ContainsKey(interval))
+            if (DateMapping.ContainsKey(interval))
             {
-                interval = IntervalMapping[interval];
+                interval = DateMapping[interval];
             }
 
             newParens.AddChild(SqlStructureConstants.ENAME_STRING, $"1 {interval}");
