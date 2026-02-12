@@ -137,9 +137,12 @@ as
 
 	declare @t2 dbo.tu_type_items_list
 
-	insert into @t2 (a, b) values (1, 2)
+	insert into @t2 (a, b) values (1, 2);
 	
-	insert into @t2 (a, b) select 1 a, 2 b
+	with test as (
+		select 1 a, 2 b
+	)
+	insert into @t2 (a, b) select * from test
 
 	insert into @t2
 	exec as_trace @str = 'asd'

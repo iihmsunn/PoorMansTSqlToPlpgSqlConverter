@@ -1757,6 +1757,7 @@ public class SyntaxTreeTransformer {
             
             var insertStatement = insertClause.Parent;
             var insertClauseIndex = insertStatement.Children.ToList().IndexOf(insertClause);
+            var head = insertStatement.Children.Take(insertClauseIndex).ToList();
             var tail = insertStatement.Children.Skip(insertClauseIndex + 1).ToList(); 
             var valuesClause = insertStatement.Children.FirstOrDefault(e => e.ChildByNameAndText(SqlStructureConstants.ENAME_OTHERKEYWORD, "values") != null);
             if (valuesClause != null) {
@@ -1777,6 +1778,7 @@ public class SyntaxTreeTransformer {
                 selectWrapperClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "from");
                 var selectWrapper = selectWrapperClause.AddChild(SqlStructureConstants.ENAME_SELECTIONTARGET_PARENS, "");
                 selectWrapperClause.AddChild(SqlStructureConstants.ENAME_OTHERNODE, "_t");
+
                 foreach (var node in tail) {
                     node.Parent.RemoveChild(node);
                     selectWrapper.AddChild(node);
@@ -1785,13 +1787,13 @@ public class SyntaxTreeTransformer {
 
             var updatedTail = insertStatement.Children.Skip(insertClauseIndex + 1).ToList();
             
-            var assignStatement = insertStatement.Parent.InsertChildBefore(SqlStructureConstants.ENAME_SQL_STATEMENT, "", insertStatement);
-            var assignClause = assignStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
-            assignClause.AddChild((Node)tableName.Clone());
-            assignClause.AddChild(SqlStructureConstants.ENAME_EQUALSSIGN, ":=");
-            assignClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "array_cat");
+            var selectStatement = insertStatement.Parent.InsertChildBefore(SqlStructureConstants.ENAME_SQL_STATEMENT, "", insertStatement);
+            var selectClause = selectStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            selectClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "select");
             
-            var arrayConcatParens = assignClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
+            selectClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_KEYWORD, "array_cat");
+            
+            var arrayConcatParens = selectClause.AddChild(SqlStructureConstants.ENAME_FUNCTION_PARENS, "");
             arrayConcatParens.AddChild((Node)tableName.Clone());
             arrayConcatParens.AddChild(SqlStructureConstants.ENAME_COMMA, ",");
 
@@ -1808,6 +1810,24 @@ public class SyntaxTreeTransformer {
             }
 
             insertStatement.Parent.RemoveChild(insertStatement);
+
+            var intoClause = selectStatement.AddChild(SqlStructureConstants.ENAME_SQL_CLAUSE, "");
+            intoClause.AddChild(SqlStructureConstants.ENAME_OTHERKEYWORD, "into");
+            intoClause.AddChild((Node)tableName.Clone());
+
+            if (head.Count > 0)
+            {
+                var temp = head[0];
+                temp.Parent.RemoveChild(temp);
+                selectStatement.InsertChildBefore(temp, selectStatement.Children.First());
+                
+                foreach (var node in head.Skip(1))
+                {
+                    node.Parent.RemoveChild(node);
+                    selectStatement.InsertChildBefore(node, temp);
+                    temp = node;
+                }    
+            }
         }
 
         foreach (var child in new List<Node>(element.Children)) {
