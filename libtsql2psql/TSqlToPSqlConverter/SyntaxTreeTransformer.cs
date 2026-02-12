@@ -1347,6 +1347,19 @@ public class SyntaxTreeTransformer {
             else
             {
                 element.TextValue = "json_each";
+
+                if (path == null)
+                {
+                    var castParens = parens.AddChild(SqlStructureConstants.ENAME_EXPRESSION_PARENS, "");
+                    foreach (var node in args)
+                    {
+                        parens.RemoveChild(node);
+                        castParens.AddChild(node);
+                    }
+
+                    var temp = parens.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "::", castParens);
+                    parens.InsertChildAfter(SqlStructureConstants.ENAME_OTHERNODE, "json", temp);    
+                }
             }
         }
         
