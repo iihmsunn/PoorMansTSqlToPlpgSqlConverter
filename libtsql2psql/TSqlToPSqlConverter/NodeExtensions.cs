@@ -25,7 +25,7 @@ namespace TSqlToPSql;
 public static class ConverterNodeExtensions {
     public static Node? FindSemicolon(this Node node) {
         if (node.Children.Count() == 0) return null;
-        var semicolon = node.ChildByName(SqlStructureConstants.ENAME_SEMICOLON);
+        var semicolon = node.ChildByNameAndText(SqlStructureConstants.ENAME_SEMICOLON);
         if (semicolon != null) return semicolon;
 
         var lastChild = node.Children.LastOrDefault(e => e.Name != SqlStructureConstants.ENAME_WHITESPACE);
