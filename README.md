@@ -66,9 +66,13 @@ When something is not supported, it will simply be left as is so you can finish 
 * Things that use very specific built-in stored procedures and system tables are not planned to be supported and they're used rarely enough to just port everything manually.
 * openjson() without "with" keyword can be converted to either json_each() for iterating over object fields, or json_array_elements() for iterating over array elements, and it's impossible to say which one should be used.
 * json_modify also apparently requires type inference so it's not implemented. One way to convert it is like this:
+
 json_modify(_json, '$.value', _value);
+
 to
+
 jsonb_set(_json::jsonb, '{value}'::text[], ('"' || _value || '"')::jsonb)::text
+
 the issue is that since third argument should be jsonb, you can't, for instance, cast a string to it, you have to first wrap it in quotes
 * Some issues may still be caused by missing type inference. For instance coalesce(a, 0) will crash if 'a' is a boolean
 
