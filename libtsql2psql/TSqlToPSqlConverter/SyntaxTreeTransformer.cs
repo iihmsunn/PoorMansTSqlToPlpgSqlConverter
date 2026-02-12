@@ -923,8 +923,12 @@ public class SyntaxTreeTransformer {
             var body = ifStatementInternal.ChildByName(SqlStructureConstants.ENAME_CONTAINER_SINGLESTATEMENT);
             var nextStatement = body.ChildByName(SqlStructureConstants.ENAME_SQL_STATEMENT);
 
-            nextStatement.Parent.RemoveChild(nextStatement);
-            container.InsertChildAfter(nextStatement, ifStatementExternal);
+            if (nextStatement != null)
+            {
+                nextStatement.Parent.RemoveChild(nextStatement);
+                container.InsertChildAfter(nextStatement, ifStatementExternal);    
+            }
+
             container.RemoveChild(ifStatementExternal);
         }
 

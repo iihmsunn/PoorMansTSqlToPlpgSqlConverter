@@ -269,3 +269,5 @@ as
 	select @result as result,
 		@msg as msg,
 		@value as value
+
+	drop table if exists #dttest2
