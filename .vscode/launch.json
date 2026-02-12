@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/tsql2psql/bin/Debug/net9.0/tsql2psql.dll",
-            "args": ["-i", "../examples/sp_example.sql", "-D"],
+            "args": ["-i", "debug/svf_firm_open_at.sql", "-D"],
             "cwd": "${workspaceFolder}/tsql2psql",
             "console": "internalConsole",
             "stopAtEntry": false
