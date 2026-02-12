@@ -155,7 +155,14 @@ as
 	where a = 1;
 
 	select *
-	from @t2 t2;
+	from @t2 t2
+	join @t2 t3 on t2.a = t3.a;
+
+	declare @json1 nvarchar(max) = (
+		select *
+		from @list
+		for json path
+	);
 
 	set @username = (select 1 a from @t2)
 

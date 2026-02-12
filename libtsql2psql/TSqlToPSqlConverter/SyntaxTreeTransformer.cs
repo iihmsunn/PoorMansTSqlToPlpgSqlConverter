@@ -1607,6 +1607,10 @@ public class SyntaxTreeTransformer {
             var children = element.Children.ToList();
             var readonlyKeywords = children.FindAll(e => e.Matches(SqlStructureConstants.ENAME_OTHERNODE, "readonly"));
             foreach (var kw in readonlyKeywords) {
+                var kwIndex = children.IndexOf(kw);
+                var lastComma = children.Take(kwIndex).LastOrDefault(e => e.Name == SqlStructureConstants.ENAME_COMMA);
+                var variableName = lastComma?.NextNonWsSibling() ?? children.First(e => e.IsName());
+
                 var typeName = kw.PreviousNonWsSibling();
                 var period = typeName?.PreviousSibling();
                 var schema = period?.PreviousSibling();
@@ -1617,7 +1621,7 @@ public class SyntaxTreeTransformer {
                 element.RemoveChild(kw);
                 element.InsertChildAfter(SqlStructureConstants.ENAME_PERIOD, "[]", typeName!);
 
-                arrayVariables.Add(typeName!.TextValue);
+                arrayVariables.Add(variableName.TextValue);
             }
         }
 
@@ -1820,7 +1824,7 @@ public class SyntaxTreeTransformer {
                 var temp = head[0];
                 temp.Parent.RemoveChild(temp);
                 selectStatement.InsertChildBefore(temp, selectStatement.Children.First());
-                
+
                 foreach (var node in head.Skip(1))
                 {
                     node.Parent.RemoveChild(node);
