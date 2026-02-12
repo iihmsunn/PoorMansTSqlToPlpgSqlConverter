@@ -248,6 +248,15 @@ as
 		)
 	from params p
 
+	merge a as t
+	using b as src
+	on t.id = src.id
+	when matched then
+	update set
+		t.v = src.v
+	when not matched then insert (v)
+	values (src.v);
+
 	select @result as result,
 		@msg as msg,
 		@value as value
